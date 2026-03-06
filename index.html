@@ -1,132 +1,116 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.7">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="your-app-icon.png">
+    <link rel="manifest" href="manifest.json">
+
+    <title>Chord Finder</title>
+    
+    <style>
+        /* Basic styling to make it look like a phone app */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .app-container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); min-height: 80vh; }
+        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
+        button { background-color: #007AFF; color: white; border: none; font-weight: bold; cursor: pointer; }
+        .chord-box { background: #eee; padding: 15px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; margin-top: 10px; }
+        .song-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; }
+    </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"&gt;</p>
-<p class="p2"><span class="Apple-converted-space">    </span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="apple-mobile-web-app-capable" content="yes"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;link rel="apple-touch-icon" href="your-app-icon.png"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;link rel="manifest" href="manifest.json"&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Chord Finder&lt;/title&gt;</p>
-<p class="p2"><span class="Apple-converted-space">    </span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* Basic styling to make it look like a phone app */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.app-container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); min-height: 80vh; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>button { background-color: #007AFF; color: white; border: none; font-weight: bold; cursor: pointer; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.chord-box { background: #eee; padding: 15px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; margin-top: 10px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.song-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;div class="app-container"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;h2&gt;🎸 Chord Finder&lt;/h2&gt;</p>
-<p class="p2"><span class="Apple-converted-space">    </span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;input type="text" id="searchInput" placeholder="Search for a song (e.g., Wonderwall)"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;button onclick="searchSong()"&gt;Search&lt;/button&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="resultArea" style="display: none;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3 id="songTitle"&gt;&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="songChords" class="chord-box"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button onclick="saveToPlaylist()"&gt;❤️ Save to Playlist&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;hr&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;h3&gt;My Playlist&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="playlistArea"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1">&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// 1. Our "Mock" Database of Songs</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const songDatabase = [</p>
-<p class="p1"><span class="Apple-converted-space">        </span>{ title: "Wonderwall", chords: "[Em] Today is [G] gonna be the day\nThat they're [D] gonna throw it back to [A7sus4] you" },</p>
-<p class="p1"><span class="Apple-converted-space">        </span>{ title: "Let It Be", chords: "When I [C] find myself in [G] times of trouble\n[Am] Mother Mary [F] comes to me" }</p>
-<p class="p1"><span class="Apple-converted-space">    </span>];</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>let currentSong = null; // Keeps track of what is on the screen</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// 2. Search Function</p>
-<p class="p1"><span class="Apple-converted-space">    </span>function searchSong() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const query = document.getElementById("searchInput").value.toLowerCase();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const result = songDatabase.find(song =&gt; song.title.toLowerCase().includes(query));</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (result) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>currentSong = result;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById("songTitle").innerText = result.title;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById("songChords").innerText = result.chords;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById("resultArea").style.display = "block";</p>
-<p class="p1"><span class="Apple-converted-space">        </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>alert("Song not found! Try 'Wonderwall' or 'Let It Be'.");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById("resultArea").style.display = "none";</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// 3. Save to LocalStorage Function</p>
-<p class="p1"><span class="Apple-converted-space">    </span>function saveToPlaylist() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (!currentSong) return;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Get existing playlist from the phone's memory, or start an empty array</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let playlist = JSON.parse(localStorage.getItem("myPlaylist")) || [];</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Check if song is already saved</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const alreadySaved = playlist.some(song =&gt; song.title === currentSong.title);</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (!alreadySaved) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>playlist.push(currentSong);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>localStorage.setItem("myPlaylist", JSON.stringify(playlist));</p>
-<p class="p1"><span class="Apple-converted-space">            </span>alert(currentSong.title + " saved to your playlist!");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>displayPlaylist(); // Update the screen</p>
-<p class="p1"><span class="Apple-converted-space">        </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>alert("This song is already in your playlist.");</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// 4. Display Playlist Function</p>
-<p class="p1"><span class="Apple-converted-space">    </span>function displayPlaylist() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const playlistArea = document.getElementById("playlistArea");</p>
-<p class="p1"><span class="Apple-converted-space">        </span>playlistArea.innerHTML = ""; // Clear it out first</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>let playlist = JSON.parse(localStorage.getItem("myPlaylist")) || [];</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (playlist.length === 0) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>playlistArea.innerHTML = "&lt;p style='color: gray; font-size: 14px;'&gt;No songs saved yet.&lt;/p&gt;";</p>
-<p class="p1"><span class="Apple-converted-space">            </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Loop through saved songs and put them on the screen</p>
-<p class="p1"><span class="Apple-converted-space">        </span>playlist.forEach(song =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const div = document.createElement("div");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>div.className = "song-item";</p>
-<p class="p1"><span class="Apple-converted-space">            </span>div.innerHTML = `&lt;strong&gt;${song.title}&lt;/strong&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>playlistArea.appendChild(div);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Run this when the app loads to show already saved songs</p>
-<p class="p1"><span class="Apple-converted-space">    </span>displayPlaylist();</p>
-<p class="p1">&lt;/script&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+
+<div class="app-container">
+    <h2>🎸 Chord Finder</h2>
+    
+    <input type="text" id="searchInput" placeholder="Search for a song (e.g., Wonderwall)">
+    <button onclick="searchSong()">Search</button>
+
+    <div id="resultArea" style="display: none;">
+        <h3 id="songTitle"></h3>
+        <div id="songChords" class="chord-box"></div>
+        <button onclick="saveToPlaylist()">❤️ Save to Playlist</button>
+    </div>
+
+    <hr>
+
+    <h3>My Playlist</h3>
+    <div id="playlistArea">
+        </div>
+</div>
+
+<script>
+    // 1. Our "Mock" Database of Songs
+    const songDatabase = [
+        { title: "Wonderwall", chords: "[Em] Today is [G] gonna be the day\nThat they're [D] gonna throw it back to [A7sus4] you" },
+        { title: "Let It Be", chords: "When I [C] find myself in [G] times of trouble\n[Am] Mother Mary [F] comes to me" }
+    ];
+
+    let currentSong = null; // Keeps track of what is on the screen
+
+    // 2. Search Function
+    function searchSong() {
+        const query = document.getElementById("searchInput").value.toLowerCase();
+        const result = songDatabase.find(song => song.title.toLowerCase().includes(query));
+
+        if (result) {
+            currentSong = result;
+            document.getElementById("songTitle").innerText = result.title;
+            document.getElementById("songChords").innerText = result.chords;
+            document.getElementById("resultArea").style.display = "block";
+        } else {
+            alert("Song not found! Try 'Wonderwall' or 'Let It Be'.");
+            document.getElementById("resultArea").style.display = "none";
+        }
+    }
+
+    // 3. Save to LocalStorage Function
+    function saveToPlaylist() {
+        if (!currentSong) return;
+
+        // Get existing playlist from the phone's memory, or start an empty array
+        let playlist = JSON.parse(localStorage.getItem("myPlaylist")) || [];
+
+        // Check if song is already saved
+        const alreadySaved = playlist.some(song => song.title === currentSong.title);
+        
+        if (!alreadySaved) {
+            playlist.push(currentSong);
+            localStorage.setItem("myPlaylist", JSON.stringify(playlist));
+            alert(currentSong.title + " saved to your playlist!");
+            displayPlaylist(); // Update the screen
+        } else {
+            alert("This song is already in your playlist.");
+        }
+    }
+
+    // 4. Display Playlist Function
+    function displayPlaylist() {
+        const playlistArea = document.getElementById("playlistArea");
+        playlistArea.innerHTML = ""; // Clear it out first
+        
+        let playlist = JSON.parse(localStorage.getItem("myPlaylist")) || [];
+
+        if (playlist.length === 0) {
+            playlistArea.innerHTML = "<p style='color: gray; font-size: 14px;'>No songs saved yet.</p>";
+            return;
+        }
+
+        // Loop through saved songs and put them on the screen
+        playlist.forEach(song => {
+            const div = document.createElement("div");
+            div.className = "song-item";
+            div.innerHTML = `<strong>${song.title}</strong>`;
+            playlistArea.appendChild(div);
+        });
+    }
+
+    // Run this when the app loads to show already saved songs
+    displayPlaylist();
+</script>
+
 </body>
 </html>
