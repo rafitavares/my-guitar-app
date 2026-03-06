@@ -51,13 +51,13 @@
         #resultArea { display: none; background: var(--bg-color); min-height: 100vh; padding: 30px 20px 120px 20px; box-sizing: border-box; }
         .controls-row { display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px; }
         
-        .toolbar { display: flex; justify-content: space-around; background: var(--chord-box-bg); padding: 10px; border-radius: 8px; margin-bottom: 20px; align-items: center; }
+        .toolbar { display: flex; justify-content: space-around; background: var(--chord-box-bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; align-items: center; }
         .toolbar-btn { background: none; border: none; color: var(--text-color); font-weight: bold; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
         .chord-box { background: var(--box-bg); padding: 20px; border-radius: 12px; font-size: 16px; line-height: 1.4; transition: font-size 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .song-line { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
         .chord-pair { display: inline-flex; flex-direction: column; justify-content: flex-end; }
-        .chord { color: var(--chord-color); font-weight: bold; font-size: 0.9em; min-height: 1em; margin-bottom: 2px; font-family: sans-serif; }
+        .chord { color: var(--chord-color); font-weight: bold; font-size: 0.9em; min-height: 1em; margin-bottom: 2px; font-family: sans-serif; transition: color 0.3s; }
         .lyric { white-space: pre-wrap; font-family: sans-serif; }
 
         .scroll-controls { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; border-radius: 40px; display: none; align-items: center; gap: 15px; padding: 12px 25px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); z-index: 1000; }
@@ -95,6 +95,12 @@
     </div>
 
     <div class="toolbar">
+        <button class="toolbar-btn" onclick="changeTranspose(-1)">⬇️ -½ Tom</button>
+        <span id="transposeLabel" style="font-weight: bold; color: var(--chord-color);">Tom: 0</span>
+        <button class="toolbar-btn" onclick="changeTranspose(1)">⬆️ +½ Tom</button>
+    </div>
+
+    <div class="toolbar">
         <button class="toolbar-btn" onclick="toggleDarkMode()">🌓 Dark Mode</button>
         <div style="width: 1px; height: 20px; background: var(--border-color);"></div>
         <button class="toolbar-btn" onclick="changeFontSize(-2)">A-</button>
@@ -113,7 +119,6 @@
 </div>
 
 <script>
-    // Agora o banco de dados começa vazio e puxa do songs.json!
     let songDatabase = []; 
     let currentSong = null;
     let isScrolling = false;
@@ -122,7 +127,10 @@
     let currentSpeedIndex = 2; 
     let currentFontSize = 16; 
 
-    // Carrega as músicas do arquivo externo
+    // Variáveis da Transposição
+    let currentTranspose = 0;
+    const musicalNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
     async function loadSongs() {
         try {
             const response = await fetch('songs.json');
@@ -133,7 +141,6 @@
         }
     }
 
-    // Roda quando o aplicativo abre
     window.onload = () => {
         loadSongs();
         displayPlaylists();
@@ -157,6 +164,40 @@
         }
     }
 
+    // A MÁGICA DA TRANSPOSIÇÃO
+    function transposeChordName(chord, steps) {
+        if (steps === 0) return chord;
+        
+        return chord.replace(/[CDEFGAB][#b]?/g, function(match) {
+            let note = match;
+            // Converte bemóis para sustenidos para facilitar a matemática
+            if (note === 'Db') note = 'C#';
+            if (note === 'Eb') note = 'D#';
+            if (note === 'Gb') note = 'F#';
+            if (note === 'Ab') note = 'G#';
+            if (note === 'Bb') note = 'A#';
+
+            let index = musicalNotes.indexOf(note);
+            if (index === -1) return match; 
+
+            let newIndex = (index + steps) % 12;
+            if (newIndex < 0) newIndex += 12;
+            return musicalNotes[newIndex];
+        });
+    }
+
+    function changeTranspose(step) {
+        currentTranspose += step;
+        
+        let labelText = currentTranspose === 0 ? "Tom: 0" : (currentTranspose > 0 ? "Tom: +" + currentTranspose : "Tom: " + currentTranspose);
+        document.getElementById("transposeLabel").innerText = labelText;
+        
+        if(currentSong) {
+            // Atualiza a tela com o novo tom na mesma hora
+            document.getElementById("songChords").innerHTML = formatChordsAndLyrics(currentSong.chords);
+        }
+    }
+
     function formatChordsAndLyrics(text) {
         const lines = text.split('\n');
         let htmlResult = '';
@@ -176,10 +217,13 @@
             
             for (let i = 1; i < parts.length; i++) {
                 let chordAndLyric = parts[i].split(']');
-                let chordName = chordAndLyric[0];
+                let originalChordName = chordAndLyric[0];
                 let lyricText = chordAndLyric[1] || ''; 
                 
-                formattedLine += `<span class="chord-pair"><span class="chord">${chordName}</span><span class="lyric">${lyricText}</span></span>`;
+                // Transpõe o acorde antes de colocar na tela
+                let finalChordName = transposeChordName(originalChordName, currentTranspose);
+                
+                formattedLine += `<span class="chord-pair"><span class="chord">${finalChordName}</span><span class="lyric">${lyricText}</span></span>`;
             }
             
             htmlResult += `<div class="song-line">${formattedLine}</div>`;
@@ -190,6 +234,9 @@
 
     function openSongOnScreen(song) {
         currentSong = song;
+        currentTranspose = 0; // Zera a transposição ao abrir música nova
+        document.getElementById("transposeLabel").innerText = "Tom: 0";
+        
         document.getElementById("songTitle").innerText = song.title;
         document.getElementById("songArtist").innerText = song.artist;
         document.getElementById("songChords").innerHTML = formatChordsAndLyrics(song.chords);
@@ -277,7 +324,6 @@
         });
     }
 
-    // Playlists são carregadas no window.onload agora
 </script>
 
 </body>
