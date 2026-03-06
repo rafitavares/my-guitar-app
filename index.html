@@ -113,25 +113,31 @@
 </div>
 
 <script>
-    const songDatabase = [
-        { 
-          title: "Wonderwall", 
-          artist: "Oasis", 
-          chords: "[Em7]Today is [G]gonna be the day\nThat they're [Dsus4]gonna throw it back to [A7sus4]you\nBy [Em7]now you should've [G]somehow\nRealized what you [Dsus4]gotta do\nI don't be[Em7]lieve that any[G]body\nFeels the [Dsus4]way I do, about you [A7sus4]now\n\nBackbeat, the [Em7]word is on the [G]street\nThat the [Dsus4]fire in your heart is [A7sus4]out\nI'm [Em7]sure you've heard it [G]all before\nBut you [Dsus4]never really had a [A7sus4]doubt\nI don't be[Em7]lieve that any[G]body\nFeels the [Dsus4]way I do, about you [A7sus4]now\n\nAnd [Cadd9]all the roads we [Dsus4]have to walk are [Em7]winding\nAnd [Cadd9]all the lights that [Dsus4]lead us there are [Em7]blinding\n[Cadd9]There are many [Dsus4]things that I would\n[G]Like to [G/F#]say to [Em7]you, but I [Dsus4]don't know [A7sus4]how\n\nBecause [Cadd9]maybe [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\nAnd [Em7]after [Cadd9]all [Em7]  [G]\nYou're my [Em7]wonder[Cadd9]wall [Em7]  [G]  [Em7]\n\n[Em7]Today was [G]gonna be the day\nBut they'll [Dsus4]never throw it back to [A7sus4]you\nBy [Em7]now you should've [G]somehow\nRealized what you're [Dsus4]not to do\nI don't be[Em7]lieve that any[G]body\nFeels the [Dsus4]way I do, about you [A7sus4]now\n\nAnd [Cadd9]all the roads that [Dsus4]lead you there are [Em7]winding\nAnd [Cadd9]all the lights that [Dsus4]light the way are [Em7]blinding\n[Cadd9]There are many [Dsus4]things that I would\n[G]Like to [G/F#]say to [Em7]you, but I [Dsus4]don't know [A7sus4]how\n\nI said [Cadd9]maybe [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\nAnd [Em7]after [Cadd9]all [Em7]  [G]\nYou're my [Em7]wonder[Cadd9]wall [Em7]  [G]  [Em7]\n\nI said [Cadd9]maybe [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\n[Cadd9]  [Em7]  [G]  [Em7]\n[Cadd9]  [Em7]  [G]  [Em7]\n[Cadd9]  [Em7]  [G]  [Em7]\n[Cadd9]  [Em7]" 
-        },
-        { 
-          title: "Let It Be", 
-          artist: "The Beatles", 
-          chords: "When I [C]find myself in [G]times of trouble\n[Am]Mother Mary [F]comes to me\nSpeaking [C]words of wisdom, [G]let it be [F]  [C]\n\nAnd in my [C]hour of [G]darkness\nShe is [Am]standing right in [F]front of me\nSpeaking [C]words of wisdom, [G]let it be [F]  [C]" 
-        }
-    ];
-
+    // Agora o banco de dados começa vazio e puxa do songs.json!
+    let songDatabase = []; 
     let currentSong = null;
     let isScrolling = false;
     let scrollInterval = null;
     const speedsArray = [120, 80, 50, 30, 15]; 
     let currentSpeedIndex = 2; 
     let currentFontSize = 16; 
+
+    // Carrega as músicas do arquivo externo
+    async function loadSongs() {
+        try {
+            const response = await fetch('songs.json');
+            songDatabase = await response.json();
+        } catch (error) {
+            console.error("Error loading songs:", error);
+            alert("Could not load the song database.");
+        }
+    }
+
+    // Roda quando o aplicativo abre
+    window.onload = () => {
+        loadSongs();
+        displayPlaylists();
+    };
 
     function toggleSearch() {
         const searchDiv = document.getElementById("searchSection");
@@ -271,7 +277,7 @@
         });
     }
 
-    displayPlaylists();
+    // Playlists são carregadas no window.onload agora
 </script>
 
 </body>
