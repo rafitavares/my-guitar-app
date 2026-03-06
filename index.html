@@ -12,35 +12,63 @@
     <title>Chord Finder</title>
     
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; background-color: #f2f2f7; color: #333; transition: background-color 0.3s; }
+        /* Variáveis de cores para facilitar o Modo Escuro */
+        :root {
+            --bg-color: #f2f2f7;
+            --box-bg: #ffffff;
+            --text-color: #333333;
+            --chord-color: #007AFF;
+            --chord-box-bg: #e5e5ea;
+            --border-color: #cccccc;
+        }
+
+        /* Cores do Modo Escuro */
+        body.dark-mode {
+            --bg-color: #000000;
+            --box-bg: #1c1c1e;
+            --text-color: #ffffff;
+            --chord-color: #32D74B; /* Verde neon para destacar no escuro */
+            --chord-box-bg: #1c1c1e;
+            --border-color: #444444;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
         
-        /* Menu Principal */
-        .header { background: white; padding: 20px 20px 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .header { background: var(--box-bg); padding: 20px 20px 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .header h2 { margin: 0; font-size: 22px; }
-        .icon-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; }
+        .icon-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; color: var(--text-color); }
 
         .app-container { padding: 20px; padding-bottom: 100px; }
         
-        #searchSection { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none; }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+        #searchSection { background: var(--box-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 16px; box-sizing: border-box; background: var(--bg-color); color: var(--text-color); }
         .btn-primary { width: 100%; background-color: #007AFF; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
         
-        /* Playlists */
-        .playlist-group { background: white; border-radius: 12px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .playlist-title { background: #e5e5ea; padding: 10px 15px; margin: 0; font-size: 16px; font-weight: bold; color: #007AFF; }
-        .song-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f2f2f7; font-size: 15px; }
+        .playlist-group { background: var(--box-bg); border-radius: 12px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .playlist-title { background: var(--chord-box-bg); padding: 10px 15px; margin: 0; font-size: 16px; font-weight: bold; color: var(--chord-color); }
+        .song-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--bg-color); font-size: 15px; }
         .song-info { flex-grow: 1; cursor: pointer; }
         .delete-btn { background: none; border: none; color: #FF3B30; font-size: 18px; cursor: pointer; padding: 5px 0 5px 15px; }
 
-        /* Tela de Música (Tela Cheia) */
-        #resultArea { display: none; background: white; min-height: 100vh; padding: 30px 20px 120px 20px; box-sizing: border-box; }
-        .chord-box { font-family: monospace; white-space: pre-wrap; margin: 20px 0; font-size: 16px; line-height: 1.5; color: #111; }
-        .controls-row { display: flex; gap: 10px; margin-top: 20px; margin-bottom: 10px; }
+        /* Tela de Música */
+        #resultArea { display: none; background: var(--bg-color); min-height: 100vh; padding: 30px 20px 120px 20px; box-sizing: border-box; }
+        .controls-row { display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px; }
         
-        /* NOVO: Painel Flutuante de Velocidade */
+        /* Barra de ferramentas extra (Fonte e Tema) */
+        .toolbar { display: flex; justify-content: space-around; background: var(--chord-box-bg); padding: 10px; border-radius: 8px; margin-bottom: 20px; align-items: center; }
+        .toolbar-btn { background: none; border: none; color: var(--text-color); font-weight: bold; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+
+        /* --- A MÁGICA DA CIFRA EM CIMA DA LETRA --- */
+        .chord-box { background: var(--box-bg); padding: 20px; border-radius: 12px; font-size: 16px; line-height: 1.4; transition: font-size 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .song-line { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
+        .chord-pair { display: inline-flex; flex-direction: column; justify-content: flex-end; }
+        .chord { color: var(--chord-color); font-weight: bold; font-size: 0.9em; min-height: 1em; margin-bottom: 2px; font-family: sans-serif; }
+        .lyric { white-space: pre-wrap; font-family: sans-serif; }
+        /* ------------------------------------------- */
+
         .scroll-controls { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; border-radius: 40px; display: none; align-items: center; gap: 15px; padding: 12px 25px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); z-index: 1000; }
         .scroll-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0 5px; }
-        .speed-label { font-size: 16px; font-weight: bold; width: 50px; text-align: center; }
+        .speed-label { font-size: 16px; font-weight: bold; width: 50px; text-align: center; font-family: sans-serif;}
         .play-btn { color: #FF9500; font-size: 28px; margin-left: 10px; }
     </style>
 </head>
@@ -54,7 +82,7 @@
 
     <div class="app-container">
         <div id="searchSection">
-            <input type="text" id="searchInput" placeholder="Nome da música (ex: Tempo Perdido)">
+            <input type="text" id="searchInput" placeholder="Nome da música...">
             <button class="btn-primary" onclick="searchSong()">Buscar Música</button>
         </div>
 
@@ -69,7 +97,15 @@
     
     <div class="controls-row">
         <button class="btn-primary" style="background-color: #FF3B30; flex: 1;" onclick="closeSong()">⬅️ Voltar</button>
-        <button class="btn-primary" style="background-color: #34C759; flex: 1;" onclick="saveToPlaylist()">➕ Playlist</button>
+        <button class="btn-primary" style="background-color: #007AFF; flex: 1;" onclick="saveToPlaylist()">➕ Playlist</button>
+    </div>
+
+    <div class="toolbar">
+        <button class="toolbar-btn" onclick="toggleDarkMode()">🌓 Modo Escuro</button>
+        <div style="width: 1px; height: 20px; background: var(--border-color);"></div>
+        <button class="toolbar-btn" onclick="changeFontSize(-2)">A-</button>
+        <span style="font-weight: bold; color: gray;">Letra</span>
+        <button class="toolbar-btn" onclick="changeFontSize(2)">A+</button>
     </div>
 
     <div id="songChords" class="chord-box"></div>
@@ -84,142 +120,138 @@
 
 <script>
     const songDatabase = [
-        { title: "Wonderwall", artist: "Oasis", chords: "[Em] Today is [G] gonna be the day\nThat they're [D] gonna throw it back to [A7sus4] you\nBy [Em] now you should've [G] somehow\nRealized what you [D] gotta do\nI don't be[Em]lieve that any[G]body\nFeels the [D] way I do, about you [A7sus4] now\n\n(E repete para testar a rolagem...)\n[Em] Today is [G] gonna be the day\nThat they're [D] gonna throw it back to [A7sus4] you\nBy [Em] now you should've [G] somehow\nRealized what you [D] gotta do\nI don't be[Em]lieve that any[G]body\nFeels the [D] way I do, about you [A7sus4] now" },
-        { title: "Let It Be", artist: "The Beatles", chords: "When I [C] find myself in [G] times of trouble\n[Am] Mother Mary [F] comes to me\nSpeaking [C] words of wisdom, [G] let it be [F] [C]\n\nAnd in my [C] hour of [G] darkness\nShe is [Am] standing right in [F] front of me\nSpeaking [C] words of wisdom, [G] let it be [F] [C]" },
-        { title: "Tempo Perdido", artist: "Legião Urbana", chords: "Todos os [C] dias quando a[Am]cordo\nNão tenho mais o [Bm] tempo que pas[Em]sou\nMas tenho [C] muito tempo\nTemos todo o [Am] tempo do mun[Bm]do [Em]" },
-        { title: "Aleluia", artist: "Gabriela Rocha", chords: "Pai eu [C] quero te a[Am]mar\nTocar o [C] teu cora[Am]ção\nE me derra[F]mar aos teus [G] pés [C] [G]\nMais perto [C] eu quero es[F]tar [G]" }
+        { title: "Wonderwall", artist: "Oasis", chords: "[Em]Today is [G]gonna be the day\nThat they're [D]gonna throw it back to [A7sus4]you\nBy [Em]now you should've [G]somehow\nRealized what you [D]gotta do\nI don't be[Em]lieve that any[G]body\nFeels the [D]way I do, about you [A7sus4]now" },
+        { title: "Let It Be", artist: "The Beatles", chords: "When I [C]find myself in [G]times of trouble\n[Am]Mother Mary [F]comes to me\nSpeaking [C]words of wisdom, [G]let it be [F]  [C]" },
+        { title: "Tempo Perdido", artist: "Legião Urbana", chords: "Todos os [C]dias quando a[Am]cordo\nNão tenho mais o [Bm]tempo que pas[Em]sou\nMas tenho [C]muito tempo\nTemos todo o [Am]tempo do mun[Bm]do [Em]" }
     ];
 
     let currentSong = null;
-
-    // Variáveis de Controle de Velocidade
     let isScrolling = false;
     let scrollInterval = null;
-    
-    // Lista de velocidades (em milissegundos). Menor o número = Mais Rápido.
-    // Vel 1 (Muito Lento) até Vel 5 (Muito Rápido)
     const speedsArray = [120, 80, 50, 30, 15]; 
-    let currentSpeedIndex = 2; // Começa no índice 2 (Velocidade 3 - 50ms)
+    let currentSpeedIndex = 2; 
+    let currentFontSize = 16; // Tamanho inicial da fonte
 
     function toggleSearch() {
         const searchDiv = document.getElementById("searchSection");
-        if (searchDiv.style.display === "none" || searchDiv.style.display === "") {
-            searchDiv.style.display = "block";
-            document.getElementById("searchInput").focus();
-        } else {
-            searchDiv.style.display = "none";
-        }
+        searchDiv.style.display = (searchDiv.style.display === "none" || searchDiv.style.display === "") ? "block" : "none";
+        if(searchDiv.style.display === "block") document.getElementById("searchInput").focus();
     }
 
     function searchSong() {
         const query = document.getElementById("searchInput").value.toLowerCase();
-        const result = songDatabase.find(song => 
-            song.title.toLowerCase().includes(query) || 
-            song.artist.toLowerCase().includes(query)
-        );
-
+        const result = songDatabase.find(song => song.title.toLowerCase().includes(query) || song.artist.toLowerCase().includes(query));
         if (result) {
             openSongOnScreen(result);
             document.getElementById("searchSection").style.display = "none";
             document.getElementById("searchInput").value = ""; 
         } else {
-            alert("Música não encontrada no banco de dados.");
+            alert("Música não encontrada.");
         }
+    }
+
+    // A FUNÇÃO MÁGICA QUE COLOCA O ACORDE EM CIMA DA SÍLABA
+    function formatChordsAndLyrics(text) {
+        const lines = text.split('\n');
+        let htmlResult = '';
+
+        lines.forEach(line => {
+            if (line.trim() === '') {
+                htmlResult += '<br>'; // Pula linha se for espaço vazio
+                return;
+            }
+
+            let formattedLine = '';
+            // Separa a linha em pedaços usando o colchete aberto "["
+            let parts = line.split('[');
+            
+            // Se tiver texto antes do primeiro acorde, coloca ele sem acorde em cima
+            if (parts[0]) {
+                formattedLine += `<span class="chord-pair"><span class="chord"></span><span class="lyric">${parts[0]}</span></span>`;
+            }
+            
+            // Para cada acorde da linha, separa o acorde da letra usando o colchete fechado "]"
+            for (let i = 1; i < parts.length; i++) {
+                let chordAndLyric = parts[i].split(']');
+                let chordName = chordAndLyric[0];
+                let lyricText = chordAndLyric[1] || ''; // Se não tiver letra depois, fica vazio
+                
+                // Constrói a estrutura HTML: Acorde em cima, Letra embaixo
+                formattedLine += `<span class="chord-pair"><span class="chord">${chordName}</span><span class="lyric">${lyricText}</span></span>`;
+            }
+            
+            htmlResult += `<div class="song-line">${formattedLine}</div>`;
+        });
+
+        return htmlResult;
     }
 
     function openSongOnScreen(song) {
         currentSong = song;
         document.getElementById("songTitle").innerText = song.title;
         document.getElementById("songArtist").innerText = song.artist;
-        document.getElementById("songChords").innerText = song.chords;
+        
+        // Aplica a formatação mágica aqui!
+        document.getElementById("songChords").innerHTML = formatChordsAndLyrics(song.chords);
         
         document.getElementById("mainInterface").style.display = "none";
         document.getElementById("resultArea").style.display = "block";
-        
-        // Mostra o painel de rolagem
         document.getElementById("scrollControls").style.display = "flex";
-        document.body.style.backgroundColor = "white";
         window.scrollTo(0, 0); 
     }
 
     function closeSong() {
         stopAutoscroll();
         currentSong = null;
-        
         document.getElementById("resultArea").style.display = "none";
         document.getElementById("scrollControls").style.display = "none";
         document.getElementById("mainInterface").style.display = "block";
-        document.body.style.backgroundColor = "#f2f2f7";
         window.scrollTo(0, 0);
     }
 
-    // --- FUNÇÕES DA NOVA BARRA DE VELOCIDADE ---
-    function changeSpeed(step) {
-        // Altera a velocidade (-1 para mais rápido, +1 para mais devagar)
-        currentSpeedIndex += step;
+    // --- CONTROLES DE TAMANHO DA FONTE ---
+    function changeFontSize(step) {
+        currentFontSize += step;
+        // Limita o tamanho (não muito pequeno, não gigantesco)
+        if (currentFontSize < 12) currentFontSize = 12;
+        if (currentFontSize > 36) currentFontSize = 36;
         
-        // Impede que passe dos limites (Vel 1 até Vel 5)
+        document.getElementById("songChords").style.fontSize = currentFontSize + "px";
+    }
+
+    // --- MODO ESCURO ---
+    function toggleDarkMode() {
+        // Liga ou desliga a classe 'dark-mode' no corpo do aplicativo
+        document.body.classList.toggle("dark-mode");
+    }
+
+    function changeSpeed(step) {
+        currentSpeedIndex += step;
         if (currentSpeedIndex < 0) currentSpeedIndex = 0;
         if (currentSpeedIndex >= speedsArray.length) currentSpeedIndex = speedsArray.length - 1;
-
-        // Atualiza o texto na tela (Índice 0 = Vel 5, Índice 4 = Vel 1)
-        // A lógica do texto foi invertida para que o "+" sempre signifique mais rápido para o usuário.
-        let displaySpeed = 5 - currentSpeedIndex; 
-        document.getElementById("speedLabel").innerText = "Vel " + displaySpeed;
-
-        // Se a rolagem já estiver ligada, reinicia ela com a nova velocidade na mesma hora
-        if (isScrolling) {
-            stopAutoscroll();
-            startAutoscroll();
-        }
+        document.getElementById("speedLabel").innerText = "Vel " + (5 - currentSpeedIndex);
+        if (isScrolling) { stopAutoscroll(); startAutoscroll(); }
     }
 
-    function toggleAutoscroll() {
-        if (isScrolling) {
-            stopAutoscroll();
-        } else {
-            startAutoscroll();
-        }
-    }
-
-    function startAutoscroll() {
-        isScrolling = true;
-        document.getElementById("autoscrollBtn").innerText = "⏸️"; 
-        
-        let currentMs = speedsArray[currentSpeedIndex];
-        scrollInterval = setInterval(() => {
-            window.scrollBy(0, 1);
-        }, currentMs); 
-    }
-
-    function stopAutoscroll() {
-        isScrolling = false;
-        document.getElementById("autoscrollBtn").innerText = "▶️"; 
-        clearInterval(scrollInterval);
-    }
-    // ---------------------------------------------
+    function toggleAutoscroll() { isScrolling ? stopAutoscroll() : startAutoscroll(); }
+    function startAutoscroll() { isScrolling = true; document.getElementById("autoscrollBtn").innerText = "⏸️"; scrollInterval = setInterval(() => { window.scrollBy(0, 1); }, speedsArray[currentSpeedIndex]); }
+    function stopAutoscroll() { isScrolling = false; document.getElementById("autoscrollBtn").innerText = "▶️"; clearInterval(scrollInterval); }
 
     function saveToPlaylist() {
         if (!currentSong) return;
         let playlistName = prompt("Digite o nome da Playlist:", "Favoritas");
         if (!playlistName) return; 
-
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         if (!allPlaylists[playlistName]) allPlaylists[playlistName] = [];
-
-        const alreadySaved = allPlaylists[playlistName].some(song => song.title === currentSong.title);
-        if (!alreadySaved) {
+        if (!allPlaylists[playlistName].some(song => song.title === currentSong.title)) {
             allPlaylists[playlistName].push(currentSong);
             localStorage.setItem("allPlaylists", JSON.stringify(allPlaylists));
-            alert("Salvo na playlist: " + playlistName);
-            displayPlaylists(); 
-        } else {
-            alert("Essa música já está na playlist " + playlistName);
-        }
+            alert("Salvo!"); displayPlaylists(); 
+        } else { alert("Já está na playlist!"); }
     }
 
     function deleteSong(playlistName, songTitle) {
-        if (confirm("Remover '" + songTitle + "' da playlist?")) {
+        if (confirm("Remover da playlist?")) {
             let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
             allPlaylists[playlistName] = allPlaylists[playlistName].filter(song => song.title !== songTitle);
             if (allPlaylists[playlistName].length === 0) delete allPlaylists[playlistName];
@@ -231,30 +263,19 @@
     function displayPlaylists() {
         const playlistsArea = document.getElementById("playlistsArea");
         playlistsArea.innerHTML = "";
-        
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         const playlistNames = Object.keys(allPlaylists);
 
-        if (playlistNames.length === 0) {
-            playlistsArea.innerHTML = "<p style='color: gray; text-align: center; margin-top: 40px;'>Nenhuma música salva ainda.<br>Clique na lupa 🔍 para buscar!</p>";
-            return;
-        }
+        if (playlistNames.length === 0) { playlistsArea.innerHTML = "<p style='color: gray; text-align: center;'>Nenhuma música salva.</p>"; return; }
 
         playlistNames.forEach(name => {
             const groupDiv = document.createElement("div");
             groupDiv.className = "playlist-group";
             groupDiv.innerHTML = `<h4 class="playlist-title">📁 ${name}</h4>`;
-            
             allPlaylists[name].forEach(song => {
                 const songDiv = document.createElement("div");
                 songDiv.className = "song-item";
-                songDiv.innerHTML = `
-                    <div class="song-info" onclick='openSongOnScreen(${JSON.stringify(song)})'>
-                        <strong>${song.title}</strong> <br>
-                        <small style="color:gray;">${song.artist}</small>
-                    </div>
-                    <button class="delete-btn" onclick="deleteSong('${name}', '${song.title}')">🗑️</button>
-                `;
+                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${JSON.stringify(song)})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div><button class="delete-btn" onclick="deleteSong('${name}', '${song.title}')">🗑️</button>`;
                 groupDiv.appendChild(songDiv);
             });
             playlistsArea.appendChild(groupDiv);
