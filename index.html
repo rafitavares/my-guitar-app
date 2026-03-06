@@ -12,7 +12,6 @@
     <title>Chord Finder</title>
     
     <style>
-        /* Variáveis de cores para facilitar o Modo Escuro */
         :root {
             --bg-color: #f2f2f7;
             --box-bg: #ffffff;
@@ -22,12 +21,11 @@
             --border-color: #cccccc;
         }
 
-        /* Cores do Modo Escuro */
         body.dark-mode {
             --bg-color: #000000;
             --box-bg: #1c1c1e;
             --text-color: #ffffff;
-            --chord-color: #32D74B; /* Verde neon para destacar no escuro */
+            --chord-color: #32D74B; 
             --chord-box-bg: #1c1c1e;
             --border-color: #444444;
         }
@@ -50,21 +48,17 @@
         .song-info { flex-grow: 1; cursor: pointer; }
         .delete-btn { background: none; border: none; color: #FF3B30; font-size: 18px; cursor: pointer; padding: 5px 0 5px 15px; }
 
-        /* Tela de Música */
         #resultArea { display: none; background: var(--bg-color); min-height: 100vh; padding: 30px 20px 120px 20px; box-sizing: border-box; }
         .controls-row { display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px; }
         
-        /* Barra de ferramentas extra (Fonte e Tema) */
         .toolbar { display: flex; justify-content: space-around; background: var(--chord-box-bg); padding: 10px; border-radius: 8px; margin-bottom: 20px; align-items: center; }
         .toolbar-btn { background: none; border: none; color: var(--text-color); font-weight: bold; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
-        /* --- A MÁGICA DA CIFRA EM CIMA DA LETRA --- */
         .chord-box { background: var(--box-bg); padding: 20px; border-radius: 12px; font-size: 16px; line-height: 1.4; transition: font-size 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .song-line { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
         .chord-pair { display: inline-flex; flex-direction: column; justify-content: flex-end; }
         .chord { color: var(--chord-color); font-weight: bold; font-size: 0.9em; min-height: 1em; margin-bottom: 2px; font-family: sans-serif; }
         .lyric { white-space: pre-wrap; font-family: sans-serif; }
-        /* ------------------------------------------- */
 
         .scroll-controls { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; border-radius: 40px; display: none; align-items: center; gap: 15px; padding: 12px 25px; box-shadow: 0 6px 20px rgba(0,0,0,0.4); z-index: 1000; }
         .scroll-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0 5px; }
@@ -82,11 +76,11 @@
 
     <div class="app-container">
         <div id="searchSection">
-            <input type="text" id="searchInput" placeholder="Nome da música...">
-            <button class="btn-primary" onclick="searchSong()">Buscar Música</button>
+            <input type="text" id="searchInput" placeholder="Search song name...">
+            <button class="btn-primary" onclick="searchSong()">Search Song</button>
         </div>
 
-        <h3 style="margin-top: 0;">Minhas Playlists</h3>
+        <h3 style="margin-top: 0;">My Playlists</h3>
         <div id="playlistsArea"></div>
     </div>
 </div>
@@ -96,15 +90,15 @@
     <p id="songArtist" style="color: gray; margin: 0; font-size: 18px;"></p>
     
     <div class="controls-row">
-        <button class="btn-primary" style="background-color: #FF3B30; flex: 1;" onclick="closeSong()">⬅️ Voltar</button>
+        <button class="btn-primary" style="background-color: #FF3B30; flex: 1;" onclick="closeSong()">⬅️ Back</button>
         <button class="btn-primary" style="background-color: #007AFF; flex: 1;" onclick="saveToPlaylist()">➕ Playlist</button>
     </div>
 
     <div class="toolbar">
-        <button class="toolbar-btn" onclick="toggleDarkMode()">🌓 Modo Escuro</button>
+        <button class="toolbar-btn" onclick="toggleDarkMode()">🌓 Dark Mode</button>
         <div style="width: 1px; height: 20px; background: var(--border-color);"></div>
         <button class="toolbar-btn" onclick="changeFontSize(-2)">A-</button>
-        <span style="font-weight: bold; color: gray;">Letra</span>
+        <span style="font-weight: bold; color: gray;">Text</span>
         <button class="toolbar-btn" onclick="changeFontSize(2)">A+</button>
     </div>
 
@@ -113,16 +107,23 @@
 
 <div id="scrollControls" class="scroll-controls">
     <button class="scroll-btn" onclick="changeSpeed(1)">➖</button>
-    <span id="speedLabel" class="speed-label">Vel 3</span>
+    <span id="speedLabel" class="speed-label">Spd 3</span>
     <button class="scroll-btn" onclick="changeSpeed(-1)">➕</button>
     <button id="autoscrollBtn" class="scroll-btn play-btn" onclick="toggleAutoscroll()">▶️</button>
 </div>
 
 <script>
     const songDatabase = [
-        { title: "Wonderwall", artist: "Oasis", chords: "[Em]Today is [G]gonna be the day\nThat they're [D]gonna throw it back to [A7sus4]you\nBy [Em]now you should've [G]somehow\nRealized what you [D]gotta do\nI don't be[Em]lieve that any[G]body\nFeels the [D]way I do, about you [A7sus4]now" },
-        { title: "Let It Be", artist: "The Beatles", chords: "When I [C]find myself in [G]times of trouble\n[Am]Mother Mary [F]comes to me\nSpeaking [C]words of wisdom, [G]let it be [F]  [C]" },
-        { title: "Tempo Perdido", artist: "Legião Urbana", chords: "Todos os [C]dias quando a[Am]cordo\nNão tenho mais o [Bm]tempo que pas[Em]sou\nMas tenho [C]muito tempo\nTemos todo o [Am]tempo do mun[Bm]do [Em]" }
+        { 
+          title: "Wonderwall", 
+          artist: "Oasis", 
+          chords: "[Em7]Today is [G]gonna be the day\nThat they're [Dsus4]gonna throw it back to [A7sus4]you\nBy [Em7]now you should've [G]somehow\nRealized what you [Dsus4]gotta do\nI don't be[Em7]lieve that any[G]body\nFeels the [Dsus4]way I do, about you [A7sus4]now\n\nBackbeat, the [Em7]word is on the [G]street\nThat the [Dsus4]fire in your heart is [A7sus4]out\nI'm [Em7]sure you've heard it [G]all before\nBut you [Dsus4]never really had a [A7sus4]doubt\nI don't be[Em7]lieve that any[G]body\nFeels the [Dsus4]way I do, about you [A7sus4]now\n\nAnd [Cadd9]all the roads we [Dsus4]have to walk are [Em7]winding\nAnd [Cadd9]all the lights that [Dsus4]lead us there are [Em7]blinding\n[Cadd9]There are many [Dsus4]things that I would\n[G]Like to [G/F#]say to [Em7]you, but I [Dsus4]don't know [A7sus4]how\n\nBecause [Cadd9]maybe [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\nAnd [Em7]after [Cadd9]all [Em7]  [G]\nYou're my [Em7]wonder[Cadd9]wall [Em7]  [G]  [Em7]\n\n[Em7]Today was [G]gonna be the day\nBut they'll [Dsus4]never throw it back to [A7sus4]you\nBy [Em7]now you should've [G]somehow\nRealized what you're [Dsus4]not to do\nI don't be[Em7]lieve that any[G]body\nFeels the [Dsus4]way I do, about you [A7sus4]now\n\nAnd [Cadd9]all the roads that [Dsus4]lead you there are [Em7]winding\nAnd [Cadd9]all the lights that [Dsus4]light the way are [Em7]blinding\n[Cadd9]There are many [Dsus4]things that I would\n[G]Like to [G/F#]say to [Em7]you, but I [Dsus4]don't know [A7sus4]how\n\nI said [Cadd9]maybe [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\nAnd [Em7]after [Cadd9]all [Em7]  [G]\nYou're my [Em7]wonder[Cadd9]wall [Em7]  [G]  [Em7]\n\nI said [Cadd9]maybe [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\nYou're [Em7]gonna be the one that [Cadd9]saves me [Em7]  [G]\n[Cadd9]  [Em7]  [G]  [Em7]\n[Cadd9]  [Em7]  [G]  [Em7]\n[Cadd9]  [Em7]  [G]  [Em7]\n[Cadd9]  [Em7]" 
+        },
+        { 
+          title: "Let It Be", 
+          artist: "The Beatles", 
+          chords: "When I [C]find myself in [G]times of trouble\n[Am]Mother Mary [F]comes to me\nSpeaking [C]words of wisdom, [G]let it be [F]  [C]\n\nAnd in my [C]hour of [G]darkness\nShe is [Am]standing right in [F]front of me\nSpeaking [C]words of wisdom, [G]let it be [F]  [C]" 
+        }
     ];
 
     let currentSong = null;
@@ -130,7 +131,7 @@
     let scrollInterval = null;
     const speedsArray = [120, 80, 50, 30, 15]; 
     let currentSpeedIndex = 2; 
-    let currentFontSize = 16; // Tamanho inicial da fonte
+    let currentFontSize = 16; 
 
     function toggleSearch() {
         const searchDiv = document.getElementById("searchSection");
@@ -146,37 +147,32 @@
             document.getElementById("searchSection").style.display = "none";
             document.getElementById("searchInput").value = ""; 
         } else {
-            alert("Música não encontrada.");
+            alert("Song not found.");
         }
     }
 
-    // A FUNÇÃO MÁGICA QUE COLOCA O ACORDE EM CIMA DA SÍLABA
     function formatChordsAndLyrics(text) {
         const lines = text.split('\n');
         let htmlResult = '';
 
         lines.forEach(line => {
             if (line.trim() === '') {
-                htmlResult += '<br>'; // Pula linha se for espaço vazio
+                htmlResult += '<br>'; 
                 return;
             }
 
             let formattedLine = '';
-            // Separa a linha em pedaços usando o colchete aberto "["
             let parts = line.split('[');
             
-            // Se tiver texto antes do primeiro acorde, coloca ele sem acorde em cima
             if (parts[0]) {
                 formattedLine += `<span class="chord-pair"><span class="chord"></span><span class="lyric">${parts[0]}</span></span>`;
             }
             
-            // Para cada acorde da linha, separa o acorde da letra usando o colchete fechado "]"
             for (let i = 1; i < parts.length; i++) {
                 let chordAndLyric = parts[i].split(']');
                 let chordName = chordAndLyric[0];
-                let lyricText = chordAndLyric[1] || ''; // Se não tiver letra depois, fica vazio
+                let lyricText = chordAndLyric[1] || ''; 
                 
-                // Constrói a estrutura HTML: Acorde em cima, Letra embaixo
                 formattedLine += `<span class="chord-pair"><span class="chord">${chordName}</span><span class="lyric">${lyricText}</span></span>`;
             }
             
@@ -190,8 +186,6 @@
         currentSong = song;
         document.getElementById("songTitle").innerText = song.title;
         document.getElementById("songArtist").innerText = song.artist;
-        
-        // Aplica a formatação mágica aqui!
         document.getElementById("songChords").innerHTML = formatChordsAndLyrics(song.chords);
         
         document.getElementById("mainInterface").style.display = "none";
@@ -209,19 +203,14 @@
         window.scrollTo(0, 0);
     }
 
-    // --- CONTROLES DE TAMANHO DA FONTE ---
     function changeFontSize(step) {
         currentFontSize += step;
-        // Limita o tamanho (não muito pequeno, não gigantesco)
         if (currentFontSize < 12) currentFontSize = 12;
         if (currentFontSize > 36) currentFontSize = 36;
-        
         document.getElementById("songChords").style.fontSize = currentFontSize + "px";
     }
 
-    // --- MODO ESCURO ---
     function toggleDarkMode() {
-        // Liga ou desliga a classe 'dark-mode' no corpo do aplicativo
         document.body.classList.toggle("dark-mode");
     }
 
@@ -229,7 +218,7 @@
         currentSpeedIndex += step;
         if (currentSpeedIndex < 0) currentSpeedIndex = 0;
         if (currentSpeedIndex >= speedsArray.length) currentSpeedIndex = speedsArray.length - 1;
-        document.getElementById("speedLabel").innerText = "Vel " + (5 - currentSpeedIndex);
+        document.getElementById("speedLabel").innerText = "Spd " + (5 - currentSpeedIndex);
         if (isScrolling) { stopAutoscroll(); startAutoscroll(); }
     }
 
@@ -239,19 +228,19 @@
 
     function saveToPlaylist() {
         if (!currentSong) return;
-        let playlistName = prompt("Digite o nome da Playlist:", "Favoritas");
+        let playlistName = prompt("Enter Playlist name:", "Favorites");
         if (!playlistName) return; 
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         if (!allPlaylists[playlistName]) allPlaylists[playlistName] = [];
         if (!allPlaylists[playlistName].some(song => song.title === currentSong.title)) {
             allPlaylists[playlistName].push(currentSong);
             localStorage.setItem("allPlaylists", JSON.stringify(allPlaylists));
-            alert("Salvo!"); displayPlaylists(); 
-        } else { alert("Já está na playlist!"); }
+            alert("Saved!"); displayPlaylists(); 
+        } else { alert("Already in this playlist!"); }
     }
 
     function deleteSong(playlistName, songTitle) {
-        if (confirm("Remover da playlist?")) {
+        if (confirm("Remove from playlist?")) {
             let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
             allPlaylists[playlistName] = allPlaylists[playlistName].filter(song => song.title !== songTitle);
             if (allPlaylists[playlistName].length === 0) delete allPlaylists[playlistName];
@@ -266,7 +255,7 @@
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         const playlistNames = Object.keys(allPlaylists);
 
-        if (playlistNames.length === 0) { playlistsArea.innerHTML = "<p style='color: gray; text-align: center;'>Nenhuma música salva.</p>"; return; }
+        if (playlistNames.length === 0) { playlistsArea.innerHTML = "<p style='color: gray; text-align: center;'>No saved songs yet.</p>"; return; }
 
         playlistNames.forEach(name => {
             const groupDiv = document.createElement("div");
