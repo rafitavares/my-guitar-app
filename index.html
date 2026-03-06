@@ -12,92 +12,166 @@
     <title>Chord Finder</title>
     
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
-        .app-container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); min-height: 80vh; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
-        button { background-color: #007AFF; color: white; border: none; font-weight: bold; cursor: pointer; }
-        .chord-box { background: #eee; padding: 15px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; margin-top: 10px; }
-        .song-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; background-color: #f2f2f7; color: #333; }
+        
+        /* Novo Cabeçalho com a Lupa */
+        .header { background: white; padding: 20px 20px 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .header h2 { margin: 0; font-size: 22px; }
+        .icon-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; }
+
+        .app-container { padding: 20px; padding-bottom: 80px; }
+        
+        /* Barra de Pesquisa Escondida */
+        #searchSection { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+        .btn-primary { width: 100%; background-color: #007AFF; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        
+        /* Área de Resultados e Cifras */
+        .chord-box { background: #e5e5ea; padding: 15px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; margin: 15px 0; font-size: 14px; overflow-x: auto; }
+        
+        /* Estilos das Playlists */
+        .playlist-group { background: white; border-radius: 12px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .playlist-title { background: #e5e5ea; padding: 10px 15px; margin: 0; font-size: 16px; font-weight: bold; color: #007AFF; }
+        .song-item { display: flex; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #f2f2f7; font-size: 15px; }
+        .song-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <h2>🎸 Chord Finder</h2>
-    
-    <input type="text" id="searchInput" placeholder="Search for a song (e.g., Wonderwall)">
-    <button onclick="searchSong()">Search</button>
+<div class="header">
+    <h2>🎸 Chords</h2>
+    <button class="icon-btn" onclick="toggleSearch()">🔍</button>
+</div>
 
-    <div id="resultArea" style="display: none;">
-        <h3 id="songTitle"></h3>
-        <div id="songChords" class="chord-box"></div>
-        <button onclick="saveToPlaylist()">❤️ Save to Playlist</button>
+<div class="app-container">
+    
+    <div id="searchSection">
+        <input type="text" id="searchInput" placeholder="Nome da música (ex: Tempo Perdido)">
+        <button class="btn-primary" onclick="searchSong()">Buscar Música</button>
     </div>
 
-    <hr>
+    <div id="resultArea" style="display: none; background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+        <h3 id="songTitle" style="margin-top: 0;"></h3>
+        <p id="songArtist" style="color: gray; margin: 0 0 10px 0;"></p>
+        <div id="songChords" class="chord-box"></div>
+        <button class="btn-primary" style="background-color: #34C759;" onclick="saveToPlaylist()">➕ Criar/Salvar na Playlist</button>
+    </div>
 
-    <h3>My Playlist</h3>
-    <div id="playlistArea">
+    <h3>Minhas Playlists</h3>
+    <div id="playlistsArea">
         </div>
+
 </div>
 
 <script>
+    // Banco de Dados Aumentado
     const songDatabase = [
-        { title: "Wonderwall", chords: "[Em] Today is [G] gonna be the day\nThat they're [D] gonna throw it back to [A7sus4] you" },
-        { title: "Let It Be", chords: "When I [C] find myself in [G] times of trouble\n[Am] Mother Mary [F] comes to me" }
+        { title: "Wonderwall", artist: "Oasis", chords: "[Em] Today is [G] gonna be the day\nThat they're [D] gonna throw it back to [A7sus4] you" },
+        { title: "Let It Be", artist: "The Beatles", chords: "When I [C] find myself in [G] times of trouble\n[Am] Mother Mary [F] comes to me" },
+        { title: "Tempo Perdido", artist: "Legião Urbana", chords: "Todos os [C] dias quando a[Am]cordo\nNão tenho mais o [Bm] tempo que pas[Em]sou" },
+        { title: "Aleluia", artist: "Gabriela Rocha", chords: "Pai eu [C] quero te a[Am]mar\nTocar o [C] teu cora[Am]ção" }
     ];
 
     let currentSong = null;
 
+    // Função para mostrar/esconder a pesquisa
+    function toggleSearch() {
+        const searchDiv = document.getElementById("searchSection");
+        if (searchDiv.style.display === "none" || searchDiv.style.display === "") {
+            searchDiv.style.display = "block";
+            document.getElementById("searchInput").focus(); // Já coloca o teclado na tela
+        } else {
+            searchDiv.style.display = "none";
+        }
+    }
+
+    // Função de Pesquisa
     function searchSong() {
         const query = document.getElementById("searchInput").value.toLowerCase();
-        const result = songDatabase.find(song => song.title.toLowerCase().includes(query));
+        const result = songDatabase.find(song => 
+            song.title.toLowerCase().includes(query) || 
+            song.artist.toLowerCase().includes(query)
+        );
 
         if (result) {
             currentSong = result;
             document.getElementById("songTitle").innerText = result.title;
+            document.getElementById("songArtist").innerText = result.artist;
             document.getElementById("songChords").innerText = result.chords;
             document.getElementById("resultArea").style.display = "block";
+            toggleSearch(); // Esconde a lupa depois de achar a música
         } else {
-            alert("Song not found! Try 'Wonderwall' or 'Let It Be'.");
-            document.getElementById("resultArea").style.display = "none";
+            alert("Música não encontrada no banco de dados.");
         }
     }
 
+    // Função para Salvar em Playlists Personalizadas
     function saveToPlaylist() {
         if (!currentSong) return;
-        let playlist = JSON.parse(localStorage.getItem("myPlaylist")) || [];
-        const alreadySaved = playlist.some(song => song.title === currentSong.title);
+        
+        // Abre uma caixinha perguntando o nome da playlist
+        let playlistName = prompt("Digite o nome da Playlist (ex: Culto de Domingo, Rock Clássico):", "Favoritas");
+        
+        // Se o usuário cancelar ou deixar em branco, não faz nada
+        if (!playlistName) return; 
+
+        // Pega todas as playlists salvas ou cria um objeto vazio
+        let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
+        
+        // Se essa playlist não existe ainda, cria uma lista vazia para ela
+        if (!allPlaylists[playlistName]) {
+            allPlaylists[playlistName] = [];
+        }
+
+        // Verifica se a música já está NESSA playlist específica
+        const alreadySaved = allPlaylists[playlistName].some(song => song.title === currentSong.title);
         
         if (!alreadySaved) {
-            playlist.push(currentSong);
-            localStorage.setItem("myPlaylist", JSON.stringify(playlist));
-            alert(currentSong.title + " saved to your playlist!");
-            displayPlaylist();
+            allPlaylists[playlistName].push(currentSong);
+            localStorage.setItem("allPlaylists", JSON.stringify(allPlaylists));
+            alert("Salvo com sucesso na playlist: " + playlistName);
+            displayPlaylists(); // Atualiza a tela
+            document.getElementById("resultArea").style.display = "none"; // Limpa a tela
         } else {
-            alert("This song is already in your playlist.");
+            alert("Essa música já está na playlist " + playlistName);
         }
     }
 
-    function displayPlaylist() {
-        const playlistArea = document.getElementById("playlistArea");
-        playlistArea.innerHTML = "";
-        let playlist = JSON.parse(localStorage.getItem("myPlaylist")) || [];
+    // Função para Mostrar as Playlists Organizadas
+    function displayPlaylists() {
+        const playlistsArea = document.getElementById("playlistsArea");
+        playlistsArea.innerHTML = "";
+        
+        let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
+        const playlistNames = Object.keys(allPlaylists);
 
-        if (playlist.length === 0) {
-            playlistArea.innerHTML = "<p style='color: gray; font-size: 14px;'>No songs saved yet.</p>";
+        if (playlistNames.length === 0) {
+            playlistsArea.innerHTML = "<p style='color: gray;'>Nenhuma playlist criada ainda.</p>";
             return;
         }
 
-        playlist.forEach(song => {
-            const div = document.createElement("div");
-            div.className = "song-item";
-            div.innerHTML = `<strong>${song.title}</strong>`;
-            playlistArea.appendChild(div);
+        // Cria um bloco visual para cada Playlist
+        playlistNames.forEach(name => {
+            const groupDiv = document.createElement("div");
+            groupDiv.className = "playlist-group";
+            
+            // Título da Playlist
+            groupDiv.innerHTML = `<h4 class="playlist-title">📁 ${name}</h4>`;
+            
+            // Coloca as músicas dentro dessa playlist
+            allPlaylists[name].forEach(song => {
+                const songDiv = document.createElement("div");
+                songDiv.className = "song-item";
+                songDiv.innerHTML = `<span><strong>${song.title}</strong> <small style="color:gray;">- ${song.artist}</small></span>`;
+                groupDiv.appendChild(songDiv);
+            });
+
+            playlistsArea.appendChild(groupDiv);
         });
     }
 
-    displayPlaylist();
+    // Inicia mostrando as playlists ao abrir o app
+    displayPlaylists();
 </script>
 
 </body>
