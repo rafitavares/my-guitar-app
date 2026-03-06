@@ -6,13 +6,12 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="your-app-icon.png">
+    <link rel="apple-touch-icon" href="logo.jpg">
     <link rel="manifest" href="manifest.json">
 
     <title>Chord Finder</title>
     
     <style>
-        /* Basic styling to make it look like a phone app */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
         .app-container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); min-height: 80vh; }
         input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
@@ -43,15 +42,13 @@
 </div>
 
 <script>
-    // 1. Our "Mock" Database of Songs
     const songDatabase = [
         { title: "Wonderwall", chords: "[Em] Today is [G] gonna be the day\nThat they're [D] gonna throw it back to [A7sus4] you" },
         { title: "Let It Be", chords: "When I [C] find myself in [G] times of trouble\n[Am] Mother Mary [F] comes to me" }
     ];
 
-    let currentSong = null; // Keeps track of what is on the screen
+    let currentSong = null;
 
-    // 2. Search Function
     function searchSong() {
         const query = document.getElementById("searchInput").value.toLowerCase();
         const result = songDatabase.find(song => song.title.toLowerCase().includes(query));
@@ -67,31 +64,24 @@
         }
     }
 
-    // 3. Save to LocalStorage Function
     function saveToPlaylist() {
         if (!currentSong) return;
-
-        // Get existing playlist from the phone's memory, or start an empty array
         let playlist = JSON.parse(localStorage.getItem("myPlaylist")) || [];
-
-        // Check if song is already saved
         const alreadySaved = playlist.some(song => song.title === currentSong.title);
         
         if (!alreadySaved) {
             playlist.push(currentSong);
             localStorage.setItem("myPlaylist", JSON.stringify(playlist));
             alert(currentSong.title + " saved to your playlist!");
-            displayPlaylist(); // Update the screen
+            displayPlaylist();
         } else {
             alert("This song is already in your playlist.");
         }
     }
 
-    // 4. Display Playlist Function
     function displayPlaylist() {
         const playlistArea = document.getElementById("playlistArea");
-        playlistArea.innerHTML = ""; // Clear it out first
-        
+        playlistArea.innerHTML = "";
         let playlist = JSON.parse(localStorage.getItem("myPlaylist")) || [];
 
         if (playlist.length === 0) {
@@ -99,7 +89,6 @@
             return;
         }
 
-        // Loop through saved songs and put them on the screen
         playlist.forEach(song => {
             const div = document.createElement("div");
             div.className = "song-item";
@@ -108,7 +97,6 @@
         });
     }
 
-    // Run this when the app loads to show already saved songs
     displayPlaylist();
 </script>
 
