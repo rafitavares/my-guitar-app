@@ -475,6 +475,9 @@
         document.getElementById("playlistsArea").style.display = "block";
 
         window.scrollTo(0, 0); 
+        
+        // MUDANÇA: LIGA A TRAVA DA TELA AQUI!
+        requestWakeLock();
     }
 
     function closeSong() {
@@ -676,7 +679,32 @@
             playlistsArea.innerHTML = "<p style='color: gray; text-align: center;'>Your library is empty.</p>";
         }
     }
+// --- CONTROLE DE TELA (NÃO DEIXAR APAGAR) ---
+    let wakeLock = null;
 
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (err) {
+            console.error('Erro na tela:', err);
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock !== null) {
+            wakeLock.release().then(() => { wakeLock = null; });
+        }
+    }
+
+    // Se você minimizar o app e voltar, ele reativa a trava
+    document.addEventListener('visibilitychange', () => {
+        if (currentSong && document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    });
+    // --------------------------------------------
 </script>
 
 </body>
