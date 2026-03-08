@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tuner</title>
+    <style>
+        :root {
+            --bg-color: #f2f2f7;
+            --box-bg: #ffffff;
+            --text-color: #333333;
+            --chord-color: #007AFF;
+            --border-color: #cccccc;
+        }
+        body.dark-mode {
+            --bg-color: #000000;
+            --box-bg: #1c1c1e;
+            --text-color: #ffffff;
+            --chord-color: #32D74B; 
+            --border-color: #444444;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-color); text-align: center; }
+        
+        .header { background: var(--box-bg); padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 5px rgba(0,0,0,0.1); }
+        .back-btn { background: none; border: none; font-size: 16px; color: #FF3B30; font-weight: bold; cursor: pointer; }
+        
+        .tuner-container { padding: 30px 20px; }
+        
+        .note-display { font-size: 100px; font-weight: bold; margin: 20px 0; color: var(--chord-color); }
+        .cents-display { font-size: 20px; color: gray; margin-bottom: 30px; }
+        
+        .meter-container { width: 100%; max-width: 300px; height: 20px; background: var(--border-color); border-radius: 10px; margin: 0 auto; position: relative; overflow: hidden; }
+        .meter-center { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: #32D74B; transform: translateX(-50%); z-index: 2; }
+        .meter-pointer { position: absolute; top: 0; bottom: 0; width: 10px; background: var(--text-color); border-radius: 5px; transform: translateX(-50%); left: 50%; transition: left 0.1s ease-out; z-index: 3; }
+
+        .btn-start { background-color: #007AFF; color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 40px; width: 80%; max-width: 300px; }
+        .btn-start.active { background-color: #FF3B30; }
+
+        .instrument-toggle { margin-top: 30px; display: flex; justify-content: center; gap: 10px; }
+        .inst-btn { padding: 10px 20px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--box-bg); color: var(--text-color); font-weight: bold; cursor: pointer; }
+        .inst-btn.active { background: var(--text-color); color: var(--box-bg); }
+
+        .tuning-ref { margin-top: 20px; font-size: 14px; color: gray; }
+    </style>
+</head>
+<body class="dark-mode"> <div class="header">
+        <button class="back-btn" onclick="window.location.href='index.html'">⬅️ Back to Chords</button>
+        <h2 style="margin: 0; font-size: 20px;">🪕 Tuner</h2>
+        <div style="width: 60px;"></div> </div>
+
+    <div class="tuner-container">
+        <div class="instrument-toggle">
+            <button id="btnGuitar" class="inst-btn active" onclick="setInstrument('Guitar')">Guitar</button>
+            <button id="btnUkulele" class="inst-btn" onclick="setInstrument('Ukulele')">Ukulele</button>
+        </div>
+
+        <p class="tuning-ref" id="tuningRef">Standard: E A D G B E</p>
+
+        <div class="note-display" id="note">--</div>
+        
+        <div class="meter-container">
+            <div class="meter-center"></div>
+            <div class="meter-pointer" id="pointer"></div>
+        </div>
+        
+        <div class="cents-display" id="cents">Press Start</div>
+
+        <button id="startBtn" class="btn-start" onclick="toggleTuner()">Start Microphone</button>
+    </div>
+
+<script>
+    let audioContext;
+    let analyser;
+    let microphone;
+    let isTuning = false;
+    let animationId;
+
+    const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    
+    function setInstrument(inst) {
+        document.getElementById('btnGuitar').classList.remove('active');
+        document.getElementById('btnUkulele').classList.remove('active');
+        document.getElementById('btn' + inst).classList.add('active');
+        
+        if(inst === 'Guitar') {
+            document.getElementById('tuningRef').innerText = "Standard: E A D G B E";
+        } else {
+            document.getElementById('tuningRef').innerText = "Standard: G C E A";
+        }
+    }
+
+    // Algoritmo de Autocorrelação para encontrar a frequência exata
+    function autoCorrelate(buf, sampleRate) {
+        let SIZE = buf.length;
+        let rms = 0;
+        for (let i = 0; i < SIZE; i++) {
+            let val = buf[i];
+            rms += val * val;
+        }
+        rms = Math.sqrt(rms / SIZE);
+        if (rms < 0.01) return -1; // Som muito baixo
+
+        let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+        for (let i = 0; i < SIZE / 2; i++)
+            if (Math.abs(buf[i]) < thres) { r1 = i; break; }
+        for (let i = 1; i < SIZE / 2; i++)
+            if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+
+        buf = buf.slice(r1, r2);
+        SIZE = buf.length;
+
+        let c = new Array(SIZE).fill(0);
+        for (let i = 0; i < SIZE; i++)
+            for (let j = 0; j < SIZE - i; j++)
+                c[i] = c[i] + buf[j] * buf[j + i];
+
+        let d = 0; while (c[d] > c[d + 1]) d++;
+        let maxval = -1, maxpos = -1;
+        for (let i = d; i < SIZE; i++) {
+            if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+        }
+        let T0 = maxpos;
+        let x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+        let a = (x1 + x3 - 2 * x2) / 2;
+        let b = (x3 - x1) / 2;
+        if (a) T0 = T0 - b / (2 * a);
+
+        return sampleRate / T0;
+    }
+
+    function noteFromPitch(frequency) {
+        let noteNum = 12 * (Math.log(frequency / 440) / Math.log(2));
+        return Math.round(noteNum) + 69;
+    }
+
+    function frequencyFromNoteNumber(note) {
+        return 440 * Math.pow(2, (note - 69) / 12);
+    }
+
+    function centsOffFromPitch(frequency, note) {
+        return Math.floor(1200 * Math.log(frequency / frequencyFromNoteNumber(note)) / Math.log(2));
+    }
+
+    async function toggleTuner() {
+        const btn = document.getElementById('startBtn');
+        
+        if (isTuning) {
+            // Desligar
+            isTuning = false;
+            cancelAnimationFrame(animationId);
+            if(audioContext) audioContext.close();
+            btn.innerText = "Start Microphone";
+            btn.classList.remove('active');
+            document.getElementById('note').innerText = "--";
+            document.getElementById('cents').innerText = "Paused";
+            document.getElementById('pointer').style.left = "50%";
+            return;
+        }
+
+        // Ligar
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+            
+            isTuning = true;
+            btn.innerText = "Stop Tuner";
+            btn.classList.add('active');
+            updatePitch();
+        } catch (err) {
+            alert("Microphone access denied or not supported by this browser. Please allow microphone access in your settings.");
+            console.error(err);
+        }
+    }
+
+    function updatePitch() {
+        if (!isTuning) return;
+
+        let buffer = new Float32Array(analyser.fftSize);
+        analyser.getFloatTimeDomainData(buffer);
+        let ac = autoCorrelate(buffer, audioContext.sampleRate);
+
+        if (ac !== -1) {
+            let pitch = ac;
+            let note = noteFromPitch(pitch);
+            let noteName = notes[note % 12];
+            let cents = centsOffFromPitch(pitch, note);
+
+            document.getElementById('note').innerText = noteName;
+            
+            // Atualiza a agulha (-50 cents a +50 cents = 0% a 100% da barra)
+            let pointerPosition = (cents + 50) + "%";
+            document.getElementById('pointer').style.left = pointerPosition;
+
+            // Muda a cor se estiver afinado (+- 5 cents)
+            if (Math.abs(cents) < 5) {
+                document.getElementById('note').style.color = "#32D74B"; // Verde
+                document.getElementById('cents').innerText = "In Tune! (" + Math.round(pitch) + " Hz)";
+            } else {
+                document.getElementById('note').style.color = "var(--text-color)";
+                if(cents < 0) {
+                    document.getElementById('cents').innerText = "Flat (Aperte a corda)";
+                } else {
+                    document.getElementById('cents').innerText = "Sharp (Afrouxe a corda)";
+                }
+            }
+        }
+
+        animationId = requestAnimationFrame(updatePitch);
+    }
+</script>
+</body>
+</html>
