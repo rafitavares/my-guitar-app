@@ -44,17 +44,16 @@
         textarea { font-family: monospace; resize: vertical; }
         .btn-primary { width: 100%; background-color: #007AFF; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
         
-        /* Resultados da Pesquisa em Tempo Real */
         #liveSearchResults { background: var(--box-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: none; margin-bottom: 20px; }
 
         .playlist-group { background: var(--box-bg); border-radius: 12px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .playlist-title { background: var(--chord-box-bg); padding: 10px 15px; margin: 0; font-size: 16px; font-weight: bold; color: var(--chord-color); }
+        .playlist-title { background: var(--chord-box-bg); padding: 10px 15px; margin: 0; font-size: 16px; font-weight: bold; color: var(--chord-color); display: flex; justify-content: space-between; align-items: center; }
         .song-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--bg-color); font-size: 15px; }
         .song-info { flex-grow: 1; cursor: pointer; }
         .delete-btn { background: none; border: none; color: #FF3B30; font-size: 18px; cursor: pointer; padding: 5px 0 5px 15px; }
 
         #resultArea { display: none; background: var(--bg-color); min-height: 100vh; padding: 30px 20px 120px 20px; box-sizing: border-box; }
-        .controls-row { display: flex; gap: 10px; margin-top: 15px; margin-bottom: 15px; }
+        .controls-row { display: flex; gap: 8px; margin-top: 15px; margin-bottom: 15px; }
         
         .toolbar { display: flex; justify-content: space-around; background: var(--chord-box-bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; align-items: center; }
         .toolbar-btn { background: none; border: none; color: var(--text-color); font-weight: bold; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
@@ -108,8 +107,10 @@
     <p id="songArtist" style="color: gray; margin: 0; font-size: 18px;"></p>
     
     <div class="controls-row">
-        <button class="btn-primary" style="background-color: #FF3B30; flex: 1;" onclick="closeSong()">⬅️ Back</button>
-        <button class="btn-primary" style="background-color: #007AFF; flex: 1;" onclick="saveToPlaylist()">➕ Playlist</button>
+        <button class="btn-primary" id="btnBack" style="background-color: #FF3B30; flex: 1;" onclick="closeSong()">⬅️ Back</button>
+        <button class="btn-primary" id="btnPrevShow" style="background-color: #FF9500; flex: 1; display: none;" onclick="prevShowSong()">⏮️ Prev</button>
+        <button class="btn-primary" id="btnNextShow" style="background-color: #FF9500; flex: 1; display: none;" onclick="nextShowSong()">Next ⏭️</button>
+        <button class="btn-primary" id="btnAddPlaylist" style="background-color: #007AFF; flex: 1;" onclick="saveToPlaylist()">➕ Playlist</button>
     </div>
 
     <div class="toolbar">
@@ -147,7 +148,12 @@
     let currentTranspose = 0;
     const musicalNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-    // CARREGA E MOSTRA AS MÚSICAS AUTOMATICAMENTE
+    // MUDANÇA: Variáveis do Banco de Memória e Modo Show
+    let savedTranspositions = JSON.parse(localStorage.getItem('savedTranspositions')) || {};
+    let isShowMode = false;
+    let currentShowList = [];
+    let currentShowIndex = 0;
+
     async function loadSongs() {
         try {
             const response = await fetch('songs.json');
@@ -158,13 +164,10 @@
             console.error("Error loading songs:", error);
             songDatabase = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
         }
-        // Depois de carregar, organiza a tela inicial!
         displayLibrary();
     }
 
-    window.onload = () => {
-        loadSongs();
-    };
+    window.onload = () => { loadSongs(); };
 
     function toggleSearch() {
         document.getElementById("addSongSection").style.display = "none";
@@ -181,9 +184,7 @@
         addDiv.style.display = addDiv.style.display === "none" ? "block" : "none";
     }
 
-    // --- NOVA PESQUISA INTELIGENTE E EM TEMPO REAL ---
     function normalizeString(str) {
-        // Remove acentos e deixa tudo em minúsculo
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     }
 
@@ -192,14 +193,12 @@
         const resultsDiv = document.getElementById("liveSearchResults");
         const libraryDiv = document.getElementById("playlistsArea");
 
-        // Se apagar o texto, esconde a pesquisa e volta a mostrar a biblioteca
         if (query.length === 0) {
             resultsDiv.style.display = "none";
             libraryDiv.style.display = "block";
             return;
         }
 
-        // Procura ignorando acentos
         const results = songDatabase.filter(song => 
             normalizeString(song.title).includes(query) || 
             normalizeString(song.artist).includes(query)
@@ -210,20 +209,18 @@
             results.forEach(song => {
                 const songDiv = document.createElement("div");
                 songDiv.className = "song-item";
-                // Transforma aspas simples para não quebrar o código HTML
                 const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
                 songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${safeSong})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div>`;
                 resultsDiv.appendChild(songDiv);
             });
             resultsDiv.style.display = "block";
-            libraryDiv.style.display = "none"; // Esconde a biblioteca para mostrar só a busca
+            libraryDiv.style.display = "none"; 
         } else {
             resultsDiv.innerHTML = "<p style='padding: 15px; text-align: center; color: gray;'>No songs found.</p>";
             resultsDiv.style.display = "block";
             libraryDiv.style.display = "none";
         }
     }
-    // --------------------------------------------------
 
     function autoFormatChords(rawText) {
         let lines = rawText.split('\n');
@@ -285,7 +282,7 @@
         document.getElementById("newChords").value = "";
         toggleAddSong();
         
-        displayLibrary(); // Atualiza a tela inicial
+        displayLibrary(); 
         openSongOnScreen(newSong);
     }
 
@@ -310,6 +307,11 @@
 
     function changeTranspose(step) {
         currentTranspose += step;
+        
+        // MUDANÇA: Salva a transposição dessa música na memória
+        savedTranspositions[currentSong.title] = currentTranspose;
+        localStorage.setItem('savedTranspositions', JSON.stringify(savedTranspositions));
+
         let labelText = currentTranspose === 0 ? "Key: 0" : (currentTranspose > 0 ? "Key: +" + currentTranspose : "Key: " + currentTranspose);
         document.getElementById("transposeLabel").innerText = labelText;
         if(currentSong) document.getElementById("songChords").innerHTML = formatChordsAndLyrics(currentSong.chords);
@@ -327,39 +329,55 @@
 
             let formattedLine = '';
             let parts = line.split('[');
-            
-            if (parts[0]) {
-                formattedLine += `<span class="chord-pair"><span class="chord"></span><span class="lyric">${parts[0]}</span></span>`;
-            }
+            if (parts[0]) formattedLine += `<span class="chord-pair"><span class="chord"></span><span class="lyric">${parts[0]}</span></span>`;
             
             for (let i = 1; i < parts.length; i++) {
                 let chordAndLyric = parts[i].split(']');
                 let originalChordName = chordAndLyric[0];
                 let lyricText = chordAndLyric[1] || ''; 
-                
                 let finalChordName = transposeChordName(originalChordName, currentTranspose);
                 formattedLine += `<span class="chord-pair"><span class="chord">${finalChordName}</span><span class="lyric">${lyricText}</span></span>`;
             }
-            
             htmlResult += `<div class="song-line">${formattedLine}</div>`;
         });
-
         return htmlResult;
     }
 
     function openSongOnScreen(song) {
         currentSong = song;
-        currentTranspose = 0; 
-        document.getElementById("transposeLabel").innerText = "Key: 0";
+        
+        // MUDANÇA: Puxa o tom salvo dessa música! (Se não tiver salvo, é 0)
+        currentTranspose = savedTranspositions[song.title] || 0; 
+        
+        let labelText = currentTranspose === 0 ? "Key: 0" : (currentTranspose > 0 ? "Key: +" + currentTranspose : "Key: " + currentTranspose);
+        document.getElementById("transposeLabel").innerText = labelText;
+        
         document.getElementById("songTitle").innerText = song.title;
         document.getElementById("songArtist").innerText = song.artist;
         document.getElementById("songChords").innerHTML = formatChordsAndLyrics(song.chords);
         
+        // MUDANÇA: Controle de visualização do Modo Show
+        if (isShowMode) {
+            document.getElementById("btnAddPlaylist").style.display = "none";
+            document.getElementById("btnPrevShow").style.display = currentShowIndex > 0 ? "block" : "none";
+            document.getElementById("btnNextShow").style.display = "block";
+            
+            // Se for a última música do show, muda o texto do botão Next
+            if (currentShowIndex === currentShowList.length - 1) {
+                document.getElementById("btnNextShow").innerText = "End Show ⏹️";
+            } else {
+                document.getElementById("btnNextShow").innerText = "Next ⏭️";
+            }
+        } else {
+            document.getElementById("btnAddPlaylist").style.display = "block";
+            document.getElementById("btnPrevShow").style.display = "none";
+            document.getElementById("btnNextShow").style.display = "none";
+        }
+
         document.getElementById("mainInterface").style.display = "none";
         document.getElementById("resultArea").style.display = "block";
         document.getElementById("scrollControls").style.display = "flex";
         
-        // Limpa a busca ao abrir a música
         document.getElementById("searchInput").value = "";
         document.getElementById("liveSearchResults").style.display = "none";
         document.getElementById("playlistsArea").style.display = "block";
@@ -370,11 +388,45 @@
     function closeSong() {
         stopAutoscroll();
         currentSong = null;
+        isShowMode = false; // Sai do modo show ao clicar em Voltar
         document.getElementById("resultArea").style.display = "none";
         document.getElementById("scrollControls").style.display = "none";
         document.getElementById("mainInterface").style.display = "block";
         window.scrollTo(0, 0);
     }
+
+    // --- FUNÇÕES DO MODO SHOW ---
+    function startShow(playlistName) {
+        let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
+        currentShowList = allPlaylists[playlistName];
+        
+        if (!currentShowList || currentShowList.length === 0) {
+            alert("Add songs to this playlist to start a show!");
+            return;
+        }
+        
+        isShowMode = true;
+        currentShowIndex = 0;
+        openSongOnScreen(currentShowList[0]);
+    }
+
+    function nextShowSong() {
+        if (currentShowIndex < currentShowList.length - 1) {
+            currentShowIndex++;
+            openSongOnScreen(currentShowList[currentShowIndex]);
+        } else {
+            alert("End of the Show! Great job! 🎸🔥");
+            closeSong();
+        }
+    }
+
+    function prevShowSong() {
+        if (currentShowIndex > 0) {
+            currentShowIndex--;
+            openSongOnScreen(currentShowList[currentShowIndex]);
+        }
+    }
+    // ----------------------------
 
     function changeFontSize(step) {
         currentFontSize += step;
@@ -383,9 +435,7 @@
         document.getElementById("songChords").style.fontSize = currentFontSize + "px";
     }
 
-    function toggleDarkMode() {
-        document.body.classList.toggle("dark-mode");
-    }
+    function toggleDarkMode() { document.body.classList.toggle("dark-mode"); }
 
     function changeSpeed(step) {
         currentSpeedIndex += step;
@@ -401,20 +451,20 @@
 
     function saveToPlaylist() {
         if (!currentSong) return;
-        let playlistName = prompt("Enter Playlist name:", "Favorites");
+        let playlistName = prompt("Name your Setlist/Playlist (e.g. Friday Show):", "Setlist 1");
         if (!playlistName) return; 
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         if (!allPlaylists[playlistName]) allPlaylists[playlistName] = [];
         if (!allPlaylists[playlistName].some(song => song.title === currentSong.title)) {
             allPlaylists[playlistName].push(currentSong);
             localStorage.setItem("allPlaylists", JSON.stringify(allPlaylists));
-            alert("Saved!"); 
-            displayLibrary(); // Atualiza a tela
-        } else { alert("Already in this playlist!"); }
+            alert("Saved to " + playlistName + "!"); 
+            displayLibrary(); 
+        } else { alert("Already in this list!"); }
     }
 
     function deleteSong(playlistName, songTitle) {
-        if (confirm("Remove from playlist?")) {
+        if (confirm("Remove from list?")) {
             let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
             allPlaylists[playlistName] = allPlaylists[playlistName].filter(song => song.title !== songTitle);
             if (allPlaylists[playlistName].length === 0) delete allPlaylists[playlistName];
@@ -423,39 +473,10 @@
         }
     }
 
-    // --- NOVA FUNÇÃO QUE MOSTRA TODAS AS MÚSICAS ORGANIZADAS ---
     function displayLibrary() {
         const playlistsArea = document.getElementById("playlistsArea");
         playlistsArea.innerHTML = "";
         
-        // 1. Agrupar músicas do songs.json pelas categorias
-        const categories = {};
-        songDatabase.forEach(song => {
-            if (song.category) {
-                if (!categories[song.category]) categories[song.category] = [];
-                // Evita mostrar a mesma música duas vezes se por acaso estiver duplicada
-                if (!categories[song.category].some(s => s.title === song.title)) {
-                    categories[song.category].push(song);
-                }
-            }
-        });
-
-        // 2. Mostrar as Categorias Oficiais na tela
-        Object.keys(categories).forEach(cat => {
-            const groupDiv = document.createElement("div");
-            groupDiv.className = "playlist-group";
-            groupDiv.innerHTML = `<h4 class="playlist-title">📚 ${cat}</h4>`;
-            categories[cat].forEach(song => {
-                const songDiv = document.createElement("div");
-                songDiv.className = "song-item";
-                const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
-                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${safeSong})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div>`;
-                groupDiv.appendChild(songDiv);
-            });
-            playlistsArea.appendChild(groupDiv);
-        });
-
-        // 3. Mostrar Músicas Adicionadas pelo Usuário (se houver)
         let customSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
         if (customSongs.length > 0) {
             const groupDiv = document.createElement("div");
@@ -471,18 +492,48 @@
             playlistsArea.appendChild(groupDiv);
         }
 
-        // 4. Mostrar as Playlists Personalizadas do Usuário (se houver)
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         const playlistNames = Object.keys(allPlaylists);
         playlistNames.forEach(name => {
             const groupDiv = document.createElement("div");
             groupDiv.className = "playlist-group";
-            groupDiv.innerHTML = `<h4 class="playlist-title">📁 ${name} (Playlist)</h4>`;
+            
+            // MUDANÇA: O botão "Start Show" do lado do nome da Playlist!
+            groupDiv.innerHTML = `
+                <div class="playlist-title">
+                    <span>🎤 Setlist: ${name}</span>
+                    <button class="btn-primary" style="width: auto; padding: 6px 12px; font-size: 14px; background-color: #FF9500; margin-left: 10px;" onclick="startShow('${name}')">▶️ Start Show</button>
+                </div>`;
+                
             allPlaylists[name].forEach(song => {
                 const songDiv = document.createElement("div");
                 songDiv.className = "song-item";
                 const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
                 songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${safeSong})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div><button class="delete-btn" onclick="deleteSong('${name}', '${song.title}')">🗑️</button>`;
+                groupDiv.appendChild(songDiv);
+            });
+            playlistsArea.appendChild(groupDiv);
+        });
+
+        const categories = {};
+        songDatabase.forEach(song => {
+            if (song.category) {
+                if (!categories[song.category]) categories[song.category] = [];
+                if (!categories[song.category].some(s => s.title === song.title)) {
+                    categories[song.category].push(song);
+                }
+            }
+        });
+
+        Object.keys(categories).forEach(cat => {
+            const groupDiv = document.createElement("div");
+            groupDiv.className = "playlist-group";
+            groupDiv.innerHTML = `<h4 class="playlist-title">📚 ${cat}</h4>`;
+            categories[cat].forEach(song => {
+                const songDiv = document.createElement("div");
+                songDiv.className = "song-item";
+                const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
+                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${safeSong})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div>`;
                 groupDiv.appendChild(songDiv);
             });
             playlistsArea.appendChild(groupDiv);
