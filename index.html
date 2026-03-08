@@ -68,6 +68,13 @@
         .scroll-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0 5px; }
         .speed-label { font-size: 16px; font-weight: bold; width: 50px; text-align: center; font-family: sans-serif;}
         .play-btn { color: #FF9500; font-size: 28px; margin-left: 10px; }
+
+        /* NOVA JANELA MODAL PARA PLAYLISTS */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: var(--box-bg); padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
+        .playlist-btn { width: 100%; text-align: left; padding: 14px; margin-bottom: 10px; background: var(--chord-box-bg); border: none; border-radius: 8px; font-size: 16px; color: var(--text-color); cursor: pointer; font-weight: bold; }
+        .playlist-btn:hover { background: #d1d1d6; }
+        body.dark-mode .playlist-btn:hover { background: #2c2c2e; }
     </style>
 </head>
 <body>
@@ -110,7 +117,7 @@
         <button class="btn-primary" id="btnBack" style="background-color: #FF3B30; flex: 1;" onclick="closeSong()">⬅️ Back</button>
         <button class="btn-primary" id="btnPrevShow" style="background-color: #FF9500; flex: 1; display: none;" onclick="prevShowSong()">⏮️ Prev</button>
         <button class="btn-primary" id="btnNextShow" style="background-color: #FF9500; flex: 1; display: none;" onclick="nextShowSong()">Next ⏭️</button>
-        <button class="btn-primary" id="btnAddPlaylist" style="background-color: #007AFF; flex: 1;" onclick="saveToPlaylist()">➕ Playlist</button>
+        <button class="btn-primary" id="btnAddPlaylist" style="background-color: #007AFF; flex: 1;" onclick="openPlaylistModal()">➕ Playlist</button>
     </div>
 
     <div class="toolbar">
@@ -137,6 +144,21 @@
     <button id="autoscrollBtn" class="scroll-btn play-btn" onclick="toggleAutoscroll()">▶️</button>
 </div>
 
+<div id="playlistModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <h3 style="margin-top: 0;">Save to Playlist</h3>
+        <p style="color: gray; font-size: 14px; margin-bottom: 15px;">Choose an existing playlist or create a new one.</p>
+        
+        <div id="existingPlaylistsList"></div>
+        
+        <hr style="border: none; border-top: 1px solid var(--border-color); margin: 15px 0;">
+        
+        <input type="text" id="newPlaylistName" placeholder="Create new playlist name...">
+        <button class="btn-primary" style="background-color: #34C759;" onclick="createNewPlaylist()">Create & Save</button>
+        <button class="btn-primary" style="background-color: transparent; color: #FF3B30; border: 1px solid #FF3B30; margin-top:10px;" onclick="closePlaylistModal()">Cancel</button>
+    </div>
+</div>
+
 <script>
     let songDatabase = []; 
     let currentSong = null;
@@ -148,11 +170,14 @@
     let currentTranspose = 0;
     const musicalNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-    // MUDANÇA: Variáveis do Banco de Memória e Modo Show
     let savedTranspositions = JSON.parse(localStorage.getItem('savedTranspositions')) || {};
     let isShowMode = false;
     let currentShowList = [];
     let currentShowIndex = 0;
+
+    // NOVAS VARIÁVEIS GLOBAIS PARA ACESSO AOS DADOS DAS LISTAS
+    let globalCategories = {};
+    let globalCustomSongs = [];
 
     async function loadSongs() {
         try {
@@ -308,7 +333,6 @@
     function changeTranspose(step) {
         currentTranspose += step;
         
-        // MUDANÇA: Salva a transposição dessa música na memória
         savedTranspositions[currentSong.title] = currentTranspose;
         localStorage.setItem('savedTranspositions', JSON.stringify(savedTranspositions));
 
@@ -346,7 +370,6 @@
     function openSongOnScreen(song) {
         currentSong = song;
         
-        // MUDANÇA: Puxa o tom salvo dessa música! (Se não tiver salvo, é 0)
         currentTranspose = savedTranspositions[song.title] || 0; 
         
         let labelText = currentTranspose === 0 ? "Key: 0" : (currentTranspose > 0 ? "Key: +" + currentTranspose : "Key: " + currentTranspose);
@@ -356,13 +379,11 @@
         document.getElementById("songArtist").innerText = song.artist;
         document.getElementById("songChords").innerHTML = formatChordsAndLyrics(song.chords);
         
-        // MUDANÇA: Controle de visualização do Modo Show
         if (isShowMode) {
             document.getElementById("btnAddPlaylist").style.display = "none";
             document.getElementById("btnPrevShow").style.display = currentShowIndex > 0 ? "block" : "none";
             document.getElementById("btnNextShow").style.display = "block";
             
-            // Se for a última música do show, muda o texto do botão Next
             if (currentShowIndex === currentShowList.length - 1) {
                 document.getElementById("btnNextShow").innerText = "End Show ⏹️";
             } else {
@@ -388,20 +409,26 @@
     function closeSong() {
         stopAutoscroll();
         currentSong = null;
-        isShowMode = false; // Sai do modo show ao clicar em Voltar
+        isShowMode = false; 
         document.getElementById("resultArea").style.display = "none";
         document.getElementById("scrollControls").style.display = "none";
         document.getElementById("mainInterface").style.display = "block";
         window.scrollTo(0, 0);
     }
 
-    // --- FUNÇÕES DO MODO SHOW ---
-    function startShow(playlistName) {
-        let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
-        currentShowList = allPlaylists[playlistName];
+    // --- NOVA FUNÇÃO QUE CONTROLA O MODO SHOW PARA QUALQUER LISTA ---
+    function startShow(type, name) {
+        if (type === 'playlist') {
+            let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
+            currentShowList = allPlaylists[name];
+        } else if (type === 'category') {
+            currentShowList = globalCategories[name];
+        } else if (type === 'custom') {
+            currentShowList = globalCustomSongs;
+        }
         
         if (!currentShowList || currentShowList.length === 0) {
-            alert("Add songs to this playlist to start a show!");
+            alert("This list is empty!");
             return;
         }
         
@@ -426,7 +453,64 @@
             openSongOnScreen(currentShowList[currentShowIndex]);
         }
     }
-    // ----------------------------
+
+    // --- FUNÇÕES DA NOVA JANELA MODAL DE PLAYLIST ---
+    function openPlaylistModal() {
+        if (!currentSong) return;
+        
+        const listDiv = document.getElementById("existingPlaylistsList");
+        listDiv.innerHTML = ""; // Limpa a lista
+        
+        let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
+        const playlistNames = Object.keys(allPlaylists);
+        
+        if (playlistNames.length === 0) {
+            listDiv.innerHTML = "<p style='font-size: 14px; color: gray;'>No playlists yet. Create your first one below!</p>";
+        } else {
+            playlistNames.forEach(name => {
+                const btn = document.createElement("button");
+                btn.className = "playlist-btn";
+                btn.innerHTML = `📁 ${name}`;
+                btn.onclick = () => addToSpecificPlaylist(name);
+                listDiv.appendChild(btn);
+            });
+        }
+        
+        document.getElementById("newPlaylistName").value = "";
+        document.getElementById("playlistModal").style.display = "flex";
+    }
+
+    function closePlaylistModal() {
+        document.getElementById("playlistModal").style.display = "none";
+    }
+
+    function createNewPlaylist() {
+        const newName = document.getElementById("newPlaylistName").value.trim();
+        if (!newName) {
+            alert("Please enter a name for the new playlist.");
+            return;
+        }
+        addToSpecificPlaylist(newName);
+    }
+
+    function addToSpecificPlaylist(playlistName) {
+        let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
+        
+        if (!allPlaylists[playlistName]) {
+            allPlaylists[playlistName] = [];
+        }
+        
+        if (!allPlaylists[playlistName].some(song => song.title === currentSong.title)) {
+            allPlaylists[playlistName].push(currentSong);
+            localStorage.setItem("allPlaylists", JSON.stringify(allPlaylists));
+            alert("Saved to " + playlistName + "!"); 
+            closePlaylistModal();
+            displayLibrary(); 
+        } else { 
+            alert("Already in this playlist!"); 
+        }
+    }
+    // ------------------------------------------------
 
     function changeFontSize(step) {
         currentFontSize += step;
@@ -449,20 +533,6 @@
     function startAutoscroll() { isScrolling = true; document.getElementById("autoscrollBtn").innerText = "⏸️"; scrollInterval = setInterval(() => { window.scrollBy(0, 1); }, speedsArray[currentSpeedIndex]); }
     function stopAutoscroll() { isScrolling = false; document.getElementById("autoscrollBtn").innerText = "▶️"; clearInterval(scrollInterval); }
 
-    function saveToPlaylist() {
-        if (!currentSong) return;
-        let playlistName = prompt("Name your Setlist/Playlist (e.g. Friday Show):", "Setlist 1");
-        if (!playlistName) return; 
-        let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
-        if (!allPlaylists[playlistName]) allPlaylists[playlistName] = [];
-        if (!allPlaylists[playlistName].some(song => song.title === currentSong.title)) {
-            allPlaylists[playlistName].push(currentSong);
-            localStorage.setItem("allPlaylists", JSON.stringify(allPlaylists));
-            alert("Saved to " + playlistName + "!"); 
-            displayLibrary(); 
-        } else { alert("Already in this list!"); }
-    }
-
     function deleteSong(playlistName, songTitle) {
         if (confirm("Remove from list?")) {
             let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
@@ -477,12 +547,17 @@
         const playlistsArea = document.getElementById("playlistsArea");
         playlistsArea.innerHTML = "";
         
-        let customSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
-        if (customSongs.length > 0) {
+        // MOSTRA A ABA CUSTOM (Added by Me) COM BOTÃO START SHOW
+        globalCustomSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
+        if (globalCustomSongs.length > 0) {
             const groupDiv = document.createElement("div");
             groupDiv.className = "playlist-group";
-            groupDiv.innerHTML = `<h4 class="playlist-title" style="background:#34C759; color:white;">🎸 Added by Me</h4>`;
-            customSongs.forEach(song => {
+            groupDiv.innerHTML = `
+                <div class="playlist-title" style="background:#34C759; color:white;">
+                    <span>🎸 Added by Me</span>
+                    <button class="btn-primary" style="width: auto; padding: 6px 12px; font-size: 14px; background-color: #ffffff; color: #34C759; margin-left: 10px;" onclick="startShow('custom', 'Added by Me')">▶️ Start Show</button>
+                </div>`;
+            globalCustomSongs.forEach(song => {
                 const songDiv = document.createElement("div");
                 songDiv.className = "song-item";
                 const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
@@ -492,17 +567,16 @@
             playlistsArea.appendChild(groupDiv);
         }
 
+        // MOSTRA AS PLAYLISTS DO USUÁRIO COM BOTÃO START SHOW
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         const playlistNames = Object.keys(allPlaylists);
         playlistNames.forEach(name => {
             const groupDiv = document.createElement("div");
             groupDiv.className = "playlist-group";
-            
-            // MUDANÇA: O botão "Start Show" do lado do nome da Playlist!
             groupDiv.innerHTML = `
                 <div class="playlist-title">
                     <span>🎤 Setlist: ${name}</span>
-                    <button class="btn-primary" style="width: auto; padding: 6px 12px; font-size: 14px; background-color: #FF9500; margin-left: 10px;" onclick="startShow('${name}')">▶️ Start Show</button>
+                    <button class="btn-primary" style="width: auto; padding: 6px 12px; font-size: 14px; background-color: #FF9500; margin-left: 10px;" onclick="startShow('playlist', '${name}')">▶️ Start Show</button>
                 </div>`;
                 
             allPlaylists[name].forEach(song => {
@@ -515,21 +589,27 @@
             playlistsArea.appendChild(groupDiv);
         });
 
-        const categories = {};
+        // AGRUPA E MOSTRA AS CATEGORIAS COM BOTÃO START SHOW
+        globalCategories = {};
         songDatabase.forEach(song => {
             if (song.category) {
-                if (!categories[song.category]) categories[song.category] = [];
-                if (!categories[song.category].some(s => s.title === song.title)) {
-                    categories[song.category].push(song);
+                if (!globalCategories[song.category]) globalCategories[song.category] = [];
+                if (!globalCategories[song.category].some(s => s.title === song.title)) {
+                    globalCategories[song.category].push(song);
                 }
             }
         });
 
-        Object.keys(categories).forEach(cat => {
+        Object.keys(globalCategories).forEach(cat => {
             const groupDiv = document.createElement("div");
             groupDiv.className = "playlist-group";
-            groupDiv.innerHTML = `<h4 class="playlist-title">📚 ${cat}</h4>`;
-            categories[cat].forEach(song => {
+            groupDiv.innerHTML = `
+                <div class="playlist-title">
+                    <span>📚 ${cat}</span>
+                    <button class="btn-primary" style="width: auto; padding: 6px 12px; font-size: 14px; background-color: #007AFF; margin-left: 10px;" onclick="startShow('category', '${cat}')">▶️ Start Show</button>
+                </div>`;
+                
+            globalCategories[cat].forEach(song => {
                 const songDiv = document.createElement("div");
                 songDiv.className = "song-item";
                 const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
