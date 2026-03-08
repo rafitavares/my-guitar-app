@@ -1,12 +1,224 @@
 [
   {
-    "title": "Wonderwall",
-    "artist": "Oasis",
-    "chords": "[Em7]Today is [G]gonna be the day\nThat they're [Dsus4]gonna throw it back to [A7sus4]you\nBy [Em7]now you should've [G]somehow\nRealized what you [Dsus4]gotta do\nI don't be[Em7]lieve that any[G]body\nFeels the [Dsus4]way I do, about you [A7sus4]now"
+    "title": "Evidências",
+    "artist": "Chitãozinho & Xororó",
+    "category": "Sertanejo",
+    "chords": "Quando eu [E]digo que deixei de te amar\nÉ porque eu te [F#m]amo\nQuando eu [B7]digo que não quero mais você\nÉ porque eu te [E]quero\nEu tenho [C#m]medo de te dar meu coração\nE con[F#m]fessar que eu estou em tuas mãos\nMas não [A]posso imaginar\nO que [B7]vai ser de mim\nSe eu te per[E]der um dia [B7]"
+  },
+  {
+    "title": "Borboletas",
+    "artist": "Victor e Leo",
+    "category": "Sertanejo",
+    "chords": "Perce[E]bi que o tempo já não passa\nVocê [B]diz que não tem graça amar as[C#m]sim\nFoi tudo tão bo[A]nito, mas vo[B]ou pro infi[E]nito\nPare[B]cido com borboletas de jar[C#m]dim\nAgora você [A]volta\nE ba[B]lança o que eu sen[E]tia por vo[B]cê"
+  },
+  {
+    "title": "Dormi na Praça",
+    "artist": "Bruno e Marrone",
+    "category": "Sertanejo",
+    "chords": "Eu cami[A]nhei sozinho pela rua\nFalei com as estrelas e com a [E]lua\nDeitei no banco da praça, tentando te esque[A]cer\n[A]Adormeci e sonhei com vo[E]cê\nNo sonho, você vinha me di[D]zer\nQue a sua pai[E]xão era [A]eu"
+  },
+  {
+    "title": "Enquanto Houver Razões",
+    "artist": "Jorge e Mateus",
+    "category": "Sertanejo",
+    "chords": "A [G]gente não precisa tá co[D/F#]lado pra tá junto\nOs [Em]nossos corpos se conversam [C]por horas e horas\nSem pa[G]lavras tão di[D/F#]zendo a todo ins[Em]tante\nUm pro [C]outro o quanto se a[D]mam"
+  },
+  {
+    "title": "Pode Chorar",
+    "artist": "Jorge e Mateus",
+    "category": "Sertanejo",
+    "chords": "Pode cho[G]rar\nMas eu não [D/F#]volto pra vo[Em]cê\nPode cho[C]rar\nVocê não [Am]vai me conven[D]cer\nPode cho[G]rar\nVocê se [D/F#]lembra o quanto eu cho[Em]rei?\nVocê vai [C]passar\nPelo que eu [D]passei [G]"
+  },
+  {
+    "title": "Flor",
+    "artist": "Jorge e Mateus",
+    "category": "Sertanejo",
+    "chords": "Flor, [G]oh, oh, [D]oh, flor\n[Em]Vem ver que a vida é muito [C]mais do que esse seu a[G]mor\nFlor, [D]oh, oh, [Em]flor\nTem muito [C]mais pra gente vi[G]ver"
+  },
+  {
+    "title": "Falando Sério",
+    "artist": "João Bosco e Vinícius",
+    "category": "Sertanejo",
+    "chords": "Falando [G]sério\nÉ bem me[D]lhor você parar com essas [Em]coisas\nDe olhar pra [C]mim com olhos de pro[D]messa\nDepois sor[G]rir como quem nada [D]quer\nVocê não [C]sabe\nMas é que eu [D]tenho cicatrizes que a [G]vida [D]fez"
+  },
+  {
+    "title": "Ai Se Eu Te Pego",
+    "artist": "Michel Teló",
+    "category": "Sertanejo",
+    "chords": "[B]Nossa, nossa\nAs[F#]sim você me mata\n[G#m]Ai se eu te pego\n[E]Ai, ai se eu te pego\n[B]Delícia, delícia\nAs[F#]sim você me mata\n[G#m]Ai se eu te pego\n[E]Ai, ai se eu te pego"
+  },
+  {
+    "title": "Hotel California",
+    "artist": "Eagles",
+    "category": "Pop/Rock Clássico",
+    "chords": "On a [Bm]dark desert highway, [F#7]cool wind in my hair\nWarm [A]smell of colitas, [E]rising up through the air\n[G]Up ahead in the distance, [D]I saw a shimmering light\nMy [Em]head grew heavy and my sight grew dim\n[F#7]I had to stop for the night\n\n[G]Welcome to the Hotel Cali[D]fornia\nSuch a [F#7]lovely place (such a lovely place)\nSuch a [Bm]lovely face"
+  },
+  {
+    "title": "Sultans of Swing (Inc. Guitar Solo)",
+    "artist": "Dire Straits",
+    "category": "Pop/Rock Clássico",
+    "chords": "You get a [Dm]shiver in the dark\nIt's [C]raining in the [Bb]park but mean[A]while\n[Dm]South of the river you [C]stop and you [Bb]hold every[A]thing\n[F]A band is blowing Dixie double [C]four time\nYou feel [Bb]alright when you hear that music [Dm]ring\n\n[Solo de Guitarra Clássico começa aqui em Dm...]"
   },
   {
     "title": "Let It Be",
     "artist": "The Beatles",
-    "chords": "When I [C]find myself in [G]times of trouble\n[Am]Mother Mary [F]comes to me\nSpeaking [C]words of wisdom, [G]let it be [F]  [C]\n\nAnd in my [C]hour of [G]darkness\nShe is [Am]standing right in [F]front of me\nSpeaking [C]words of wisdom, [G]let it be [F]  [C]"
+    "category": "Pop/Rock Clássico",
+    "chords": "When I [C]find myself in [G]times of trouble\n[Am]Mother Mary [F]comes to me\nSpeaking [C]words of wisdom, [G]let it be [F] [C]\n\nAnd in my [C]hour of [G]darkness\nShe is [Am]standing right in [F]front of me\nSpeaking [C]words of wisdom, [G]let it be [F] [C]"
+  },
+  {
+    "title": "Stand By Me",
+    "artist": "Ben E. King",
+    "category": "Pop/Rock Clássico",
+    "chords": "When the [A]night has come\n[F#m]And the land is dark\nAnd the [D]moon is the [E]only light we'll [A]see\nNo, I [A]won't be afraid, no, I [F#m]won't be afraid\nJust as [D]long as you [E]stand, stand by [A]me"
+  },
+  {
+    "title": "Take Me Home, Country Roads",
+    "artist": "John Denver",
+    "category": "Country & Folk",
+    "chords": "Country [G]roads, take me [D]home\nTo the [Em]place I be[C]long\nWest Vir[G]ginia, mountain [D]mama\nTake me [C]home, country [G]roads"
+  },
+  {
+    "title": "Blinding Lights (Tebey Cover)",
+    "artist": "Tebey",
+    "category": "Country & Folk",
+    "chords": "I said, [Fm]ooh, I'm blinded by the [Cm]lights\nNo, I can't [Eb]sleep until I feel your [Bb]touch\nI said, [Fm]ooh, I'm drowning in the [Cm]night\nOh, when I'm [Eb]like this, you're the one I [Bb]trust"
+  },
+  {
+    "title": "Ride The Lightning",
+    "artist": "Warren Zeiders",
+    "category": "Country & Folk",
+    "chords": "I've been [Am]riding the lightning\n[C]Rolling like thunder\n[G]Tearing up the highway\n[D]Going under\nIf you're [Am]looking for me\nI'm [C]where the wild things [G]are [D]"
+  },
+  {
+    "title": "Your Man",
+    "artist": "Josh Turner",
+    "category": "Country & Folk",
+    "chords": "Baby, [G]lock the door and turn the lights down [D]low\nPut some [Am]music on that's soft and [C]slow\nBaby, [G]we ain't got no place to [D]go\nI hope you [Am]understand\nI've been [C]thinking 'bout this all day [D]long\nNever felt a feeling quite this [G]strong"
+  },
+  {
+    "title": "Thought You Should Know",
+    "artist": "Morgan Wallen",
+    "category": "Country & Folk",
+    "chords": "I thought you should [C]know\nThat all those [G]prayers you thought you wasted on [Am]me\nMust've finally made their way on through\nI thought you should [C]know\nI got me a [G]new girl down in Jefferson [Am]City\nAnd she lets me fish whenever I want to"
+  },
+  {
+    "title": "Old Town Road",
+    "artist": "Lil Nas X",
+    "category": "Country & Folk",
+    "chords": "Yeah, I'm gonna [E]take my horse to the [G]old town road\nI'm gonna [D]ride 'til I can't no [A]more\nI'm gonna [E]take my horse to the [G]old town road\nI'm gonna [D]ride 'til I can't no [A]more"
+  },
+  {
+    "title": "Perfect",
+    "artist": "Ed Sheeran",
+    "category": "Ed Sheeran Hits",
+    "chords": "I found a [G]love for [Em]me\nDarling, just [C]dive right in and follow my [D]lead\nWell, I found a [G]girl, beauti[Em]ful and sweet\nOh, I never [C]knew you were the someone waiting for [D]me\n\n'Cause we were just kids when we [G]fell in love"
+  },
+  {
+    "title": "Shape of You",
+    "artist": "Ed Sheeran",
+    "category": "Ed Sheeran Hits",
+    "chords": "The [C#m]club isn't the best place to [F#m]find a lover\nSo the [A]bar is where I [B]go\n[C#m]Me and my friends at the [F#m]table doing shots\nDrinking [A]fast and then we talk [B]slow\nI'm in [C#m]love with the shape of [F#m]you"
+  },
+  {
+    "title": "Thinking Out Loud",
+    "artist": "Ed Sheeran",
+    "category": "Ed Sheeran Hits",
+    "chords": "When your [D]legs don't work like they [D/F#]used to be[G]fore [A]\nAnd I [D]can't sweep you off of your [D/F#]feet [G] [A]\nWill your [D]mouth still remember the [D/F#]taste of my [G]love? [A]\nWill your [D]eyes still smile from your [D/F#]cheeks? [G] [A]\n\nAnd darling I will [D]be loving you [D/F#]'til we're [G]70 [A]"
+  },
+  {
+    "title": "Photograph",
+    "artist": "Ed Sheeran",
+    "category": "Ed Sheeran Hits",
+    "chords": "We keep this [D]love in a photo[Bm]graph\nWe made these [A]memories for our[G]selves\nWhere our [D]eyes are never closing\nHearts are [Bm]never broken\nAnd [A]time's forever frozen [G]still"
+  },
+  {
+    "title": "Yellow",
+    "artist": "Coldplay",
+    "category": "Pop Internacional",
+    "chords": "Look at the [A]stars\nLook how they shine for [E]you\nAnd everything you [D]do\nYeah, they were all yellow [A]\nI came a[A]long\nI wrote a song for [E]you"
+  },
+  {
+    "title": "Hallelujah",
+    "artist": "Jeff Buckley",
+    "category": "Pop Internacional",
+    "chords": "I [C]heard there was a [Am]secret chord\nThat [C]David played and it [Am]pleased the Lord\nBut [F]you don't really [G]care for music, [C]do you? [G]\nIt [C]goes like this, the [F]fourth, the [G]fifth\nThe [Am]minor fall, the [F]major lift\nThe [G]baffled king com[E7]posing Halle[Am]lujah"
+  },
+  {
+    "title": "Love Yourself",
+    "artist": "Justin Bieber",
+    "category": "Pop Internacional",
+    "chords": "For all the [C]times that you [G/B]rain on my pa[Am]rade\nAnd all the [Dm]clubs you get in [C]using my [G]name\nYou think you [C]broke my heart, oh [G/B]girl for goodness [Am]sake\nYou think I'm [Dm]crying on my [C]own, well I ain't [G]\n\n'Cause if you [C]like the way you [G/B]look that [Am]much\nOh baby you should go and love yourself"
+  },
+  {
+    "title": "Sway",
+    "artist": "Michael Buble",
+    "category": "Pop Internacional",
+    "chords": "When marimba [Dm]rhythms start to play\nDance with me, [A7]make me sway\nLike a lazy ocean hugs the shore\nHold me close, [Dm]sway me more\n\nLike a flower [Dm]bending in the breeze\nBend with me, [A7]sway with ease"
+  },
+  {
+    "title": "Home",
+    "artist": "Michael Buble",
+    "category": "Pop Internacional",
+    "chords": "Another [G]summer day\nHas come and gone away\nIn [Em]Paris and Rome\nBut I wanna go [C]home\nMm, [D]may be surrounded by\nA million people, [G]I\nStill feel all a[Em]lone\nI just wanna go [C]home\nOh, I miss you, you [D]know"
+  },
+  {
+    "title": "Ocean",
+    "artist": "Zeeba",
+    "category": "Indie & Acústico",
+    "chords": "[Em]You can find me\nWhere the [C]ocean meets the sky\n[G]We can fly away, [D]yeah\n[Em]You can find me\nWhere the [C]sun will never die\n[G]We can fly away, [D]yeah"
+  },
+  {
+    "title": "Hear Me Now",
+    "artist": "Zeeba",
+    "category": "Indie & Acústico",
+    "chords": "If you [F#m]get to hear me now [E]\nI [D]know you'll get stronger\nWhen you [F#m]get older, oh [E]\nJust [D]don't shrug your shoulders\nWhen you [F#m]get older, oh [E]\nThings [D]aren't easy\nSo just you be[F#m]lieve me now [E] [D]"
+  },
+  {
+    "title": "September Song",
+    "artist": "JP Cooper",
+    "category": "Indie & Acústico",
+    "chords": "You were my Sep[F]tember song, summer lasted [C]too long\nTime moves so [G]slowly, when you're only fif[Am]teen\nYou were my Sep[F]tember song, tell me where have [C]you gone?\nDo you re[G]member me? We were only fif[Am]teen"
+  },
+  {
+    "title": "Stargazing",
+    "artist": "Myles Smith",
+    "category": "Indie & Acústico",
+    "chords": "I've been [Am]stargazing\nLooking at the [F]night sky\nWondering if [C]you're looking too\nFrom the other [G]side\nIt's a [Am]long way down\nBut I'll keep holding [F]on\nIf you're out there [C]listening\nTo this [G]song"
+  },
+  {
+    "title": "Solo",
+    "artist": "Myles Smith",
+    "category": "Indie & Acústico",
+    "chords": "I've been flying [Am]solo\nLearning how to [F]breathe again\nWalking down this [C]road alone\nWaiting for the [G]wind to change\nAnd maybe to[Am]morrow\nI'll finally find my [F]way\nBut for now I'm [C]solo\nTaking it day by [G]day"
+  },
+  {
+    "title": "Nice To Meet You",
+    "artist": "Myles Smith",
+    "category": "Indie & Acústico",
+    "chords": "Well it's [C]nice to meet you\nI've been [Am]waiting for a while\nJust to [F]see your face\nAnd to [G]see you smile\nIt's [C]nice to meet you\nCan we [Am]stay right here?\nMake the [F]rest of the world\nJust [G]disappear"
+  },
+  {
+    "title": "Wind of Change",
+    "artist": "Scorpions",
+    "category": "Scorpions Hits",
+    "chords": "I [F]follow the Moskva\nDown to Gorky [Dm]Park\nListening to the [F]wind of [Am]change [G]\nAn [F]August summer night\nSoldiers passing [Dm]by\nListening to the [F]wind of [Am]change [G]\n\n[C]Take [G]me to the [Dm]magic of the [G]moment\nOn a [C]glory [G]night"
+  },
+  {
+    "title": "Still Loving You",
+    "artist": "Scorpions",
+    "category": "Scorpions Hits",
+    "chords": "[Gm]Time, it needs time\nTo win back your love a[D]gain\nI will be [D7]there, I will be [Gm]there\n[Gm]Love, only love\nCan bring back your love some[D]day\nI will be [D7]there, I will be [Gm]there"
+  },
+  {
+    "title": "Rock You Like A Hurricane",
+    "artist": "Scorpions",
+    "category": "Scorpions Hits",
+    "chords": "Here I [Em]am, [G]rock you like a [A]hurricane [C] [D]\nHere I [Em]am, [G]rock you like a [A]hurricane [C] [D]"
+  },
+  {
+    "title": "Love Story (Fate of Ophelia placeholder)",
+    "artist": "Taylor Swift",
+    "category": "Pop Internacional",
+    "chords": "We were both [C]young when I first saw you\nI close my [F]eyes and the flashback starts\nI'm standing [Am]there\nOn a balcony in [F]summer air\nSee the lights, see the party, the ball gowns\nSee you make your way through the crowd\nAnd say hello\nLittle did I know\n\nThat you were [C]Romeo, you were throwing pebbles\nAnd my [F]daddy said stay away from Juliet"
   }
 ]
