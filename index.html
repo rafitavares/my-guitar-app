@@ -34,12 +34,14 @@
         
         .header { background: var(--box-bg); padding: 20px 20px 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .header h2 { margin: 0; font-size: 22px; }
+        .header-buttons { display: flex; gap: 10px; }
         .icon-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; color: var(--text-color); }
 
         .app-container { padding: 20px; padding-bottom: 100px; }
         
-        #searchSection { background: var(--box-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none; }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 16px; box-sizing: border-box; background: var(--bg-color); color: var(--text-color); }
+        #searchSection, #addSongSection { background: var(--box-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 16px; box-sizing: border-box; background: var(--bg-color); color: var(--text-color); font-family: sans-serif; }
+        textarea { font-family: monospace; resize: vertical; }
         .btn-primary { width: 100%; background-color: #007AFF; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
         
         .playlist-group { background: var(--box-bg); border-radius: 12px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -71,16 +73,29 @@
 <div id="mainInterface">
     <div class="header">
         <h2>🎸 Chords</h2>
-        <button class="icon-btn" onclick="toggleSearch()">🔍</button>
+        <div class="header-buttons">
+            <button class="icon-btn" onclick="toggleAddSong()">➕</button>
+            <button class="icon-btn" onclick="toggleSearch()">🔍</button>
+        </div>
     </div>
 
     <div class="app-container">
+        
         <div id="searchSection">
             <input type="text" id="searchInput" placeholder="Search song name...">
             <button class="btn-primary" onclick="searchSong()">Search Song</button>
         </div>
 
-        <h3 style="margin-top: 0;">My Playlists</h3>
+        <div id="addSongSection">
+            <h3 style="margin-top: 0;">Add New Song</h3>
+            <input type="text" id="newTitle" placeholder="Song Title">
+            <input type="text" id="newArtist" placeholder="Artist">
+            <textarea id="newChords" rows="8" placeholder="Paste chords and lyrics here... (e.g. from Cifra Club)"></textarea>
+            <button class="btn-primary" style="background-color: #34C759;" onclick="saveCustomSong()">💾 Save Song</button>
+            <button class="btn-primary" style="background-color: #FF3B30; margin-top: 10px;" onclick="toggleAddSong()">Cancel</button>
+        </div>
+
+        <h3 style="margin-top: 0;">My Library & Playlists</h3>
         <div id="playlistsArea"></div>
     </div>
 </div>
@@ -95,9 +110,9 @@
     </div>
 
     <div class="toolbar">
-        <button class="toolbar-btn" onclick="changeTranspose(-1)">⬇️ -½ Tom</button>
-        <span id="transposeLabel" style="font-weight: bold; color: var(--chord-color);">Tom: 0</span>
-        <button class="toolbar-btn" onclick="changeTranspose(1)">⬆️ +½ Tom</button>
+        <button class="toolbar-btn" onclick="changeTranspose(-1)">⬇️ -½</button>
+        <span id="transposeLabel" style="font-weight: bold; color: var(--chord-color);">Key: 0</span>
+        <button class="toolbar-btn" onclick="changeTranspose(1)">⬆️ +½</button>
     </div>
 
     <div class="toolbar">
@@ -126,18 +141,20 @@
     const speedsArray = [120, 80, 50, 30, 15]; 
     let currentSpeedIndex = 2; 
     let currentFontSize = 16; 
-
-    // Variáveis da Transposição
     let currentTranspose = 0;
     const musicalNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
+    // CARREGA AS MÚSICAS DO JSON E AS MÚSICAS CRIADAS PELO USUÁRIO
     async function loadSongs() {
         try {
             const response = await fetch('songs.json');
-            songDatabase = await response.json();
+            const jsonSongs = await response.json();
+            
+            const customSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
+            songDatabase = [...jsonSongs, ...customSongs]; // Junta as duas listas
         } catch (error) {
             console.error("Error loading songs:", error);
-            alert("Could not load the song database.");
+            songDatabase = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
         }
     }
 
@@ -147,9 +164,15 @@
     };
 
     function toggleSearch() {
+        document.getElementById("addSongSection").style.display = "none";
         const searchDiv = document.getElementById("searchSection");
-        searchDiv.style.display = (searchDiv.style.display === "none" || searchDiv.style.display === "") ? "block" : "none";
-        if(searchDiv.style.display === "block") document.getElementById("searchInput").focus();
+        searchDiv.style.display = searchDiv.style.display === "none" ? "block" : "none";
+    }
+
+    function toggleAddSong() {
+        document.getElementById("searchSection").style.display = "none";
+        const addDiv = document.getElementById("addSongSection");
+        addDiv.style.display = addDiv.style.display === "none" ? "block" : "none";
     }
 
     function searchSong() {
@@ -160,17 +183,92 @@
             document.getElementById("searchSection").style.display = "none";
             document.getElementById("searchInput").value = ""; 
         } else {
-            alert("Song not found.");
+            alert("Song not found in your library.");
         }
     }
 
-    // A MÁGICA DA TRANSPOSIÇÃO
+    // --- O ROBÔ CONVERSOR (CIFRA CLUB PARA O SEU APP) ---
+    function autoFormatChords(rawText) {
+        let lines = rawText.split('\n');
+        let result = [];
+        let i = 0;
+        
+        while (i < lines.length) {
+            let line = lines[i];
+            
+            // Verifica se a linha é composta majoritariamente por acordes
+            let tokens = line.trim().split(/\s+/);
+            let chordRegex = /^[A-G][#b]?(m|maj|dim|aug|sus|add)?\d*(\/[A-G][#b]?)?$/i;
+            let chordCount = tokens.filter(t => chordRegex.test(t)).length;
+            
+            // Se mais de 50% das palavras na linha forem acordes, é uma "linha de acorde"
+            let isChordLine = tokens.length > 0 && (chordCount / tokens.length) >= 0.5;
+
+            if (isChordLine && i + 1 < lines.length && lines[i+1].trim() !== '') {
+                // Junta o acorde com a letra na linha de baixo
+                let lyricLine = lines[i+1];
+                let chordMatches = [...line.matchAll(/\S+/g)];
+                let paddedLyric = lyricLine.padEnd(line.length, ' ');
+                let offset = 0;
+                let mergedLyric = paddedLyric;
+
+                for (let match of chordMatches) {
+                    let chord = match[0];
+                    let pos = match.index;
+                    mergedLyric = mergedLyric.slice(0, pos + offset) + '[' + chord + ']' + mergedLyric.slice(pos + offset);
+                    offset += chord.length + 2;
+                }
+                result.push(mergedLyric.trim());
+                i += 2; // Pula a linha da letra já que juntamos as duas
+            } else {
+                result.push(line);
+                i++;
+            }
+        }
+        return result.join('\n');
+    }
+
+    // SALVAR NOVA MÚSICA
+    function saveCustomSong() {
+        const title = document.getElementById("newTitle").value.trim();
+        const artist = document.getElementById("newArtist").value.trim();
+        const rawChords = document.getElementById("newChords").value;
+
+        if (!title || !rawChords) {
+            alert("Please enter a title and paste the chords!");
+            return;
+        }
+
+        // Passa o texto pelo robô conversor
+        const formattedChords = autoFormatChords(rawChords);
+
+        const newSong = { title, artist, chords: formattedChords };
+
+        // Salva na memória do celular
+        let customSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
+        customSongs.push(newSong);
+        localStorage.setItem("myCustomSongs", JSON.stringify(customSongs));
+
+        // Adiciona na memória do aplicativo na mesma hora
+        songDatabase.push(newSong);
+
+        alert("Song saved successfully!");
+        
+        // Limpa a tela
+        document.getElementById("newTitle").value = "";
+        document.getElementById("newArtist").value = "";
+        document.getElementById("newChords").value = "";
+        toggleAddSong();
+        
+        // Abre a música para você ver como ficou
+        openSongOnScreen(newSong);
+    }
+    // ----------------------------------------------------
+
     function transposeChordName(chord, steps) {
         if (steps === 0) return chord;
-        
         return chord.replace(/[CDEFGAB][#b]?/g, function(match) {
             let note = match;
-            // Converte bemóis para sustenidos para facilitar a matemática
             if (note === 'Db') note = 'C#';
             if (note === 'Eb') note = 'D#';
             if (note === 'Gb') note = 'F#';
@@ -188,12 +286,10 @@
 
     function changeTranspose(step) {
         currentTranspose += step;
-        
-        let labelText = currentTranspose === 0 ? "Tom: 0" : (currentTranspose > 0 ? "Tom: +" + currentTranspose : "Tom: " + currentTranspose);
+        let labelText = currentTranspose === 0 ? "Key: 0" : (currentTranspose > 0 ? "Key: +" + currentTranspose : "Key: " + currentTranspose);
         document.getElementById("transposeLabel").innerText = labelText;
         
         if(currentSong) {
-            // Atualiza a tela com o novo tom na mesma hora
             document.getElementById("songChords").innerHTML = formatChordsAndLyrics(currentSong.chords);
         }
     }
@@ -220,9 +316,7 @@
                 let originalChordName = chordAndLyric[0];
                 let lyricText = chordAndLyric[1] || ''; 
                 
-                // Transpõe o acorde antes de colocar na tela
                 let finalChordName = transposeChordName(originalChordName, currentTranspose);
-                
                 formattedLine += `<span class="chord-pair"><span class="chord">${finalChordName}</span><span class="lyric">${lyricText}</span></span>`;
             }
             
@@ -234,9 +328,8 @@
 
     function openSongOnScreen(song) {
         currentSong = song;
-        currentTranspose = 0; // Zera a transposição ao abrir música nova
-        document.getElementById("transposeLabel").innerText = "Tom: 0";
-        
+        currentTranspose = 0; 
+        document.getElementById("transposeLabel").innerText = "Key: 0";
         document.getElementById("songTitle").innerText = song.title;
         document.getElementById("songArtist").innerText = song.artist;
         document.getElementById("songChords").innerHTML = formatChordsAndLyrics(song.chords);
@@ -308,7 +401,25 @@
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         const playlistNames = Object.keys(allPlaylists);
 
-        if (playlistNames.length === 0) { playlistsArea.innerHTML = "<p style='color: gray; text-align: center;'>No saved songs yet.</p>"; return; }
+        // NOVO: Mostrar também as músicas adicionadas pelo usuário na tela inicial
+        let customSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
+        if (customSongs.length > 0) {
+            const groupDiv = document.createElement("div");
+            groupDiv.className = "playlist-group";
+            groupDiv.innerHTML = `<h4 class="playlist-title" style="background:#34C759; color:white;">🎸 Added by Me</h4>`;
+            customSongs.forEach(song => {
+                const songDiv = document.createElement("div");
+                songDiv.className = "song-item";
+                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${JSON.stringify(song)})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div>`;
+                groupDiv.appendChild(songDiv);
+            });
+            playlistsArea.appendChild(groupDiv);
+        }
+
+        if (playlistNames.length === 0 && customSongs.length === 0) { 
+            playlistsArea.innerHTML = "<p style='color: gray; text-align: center;'>Your library is empty.</p>"; 
+            return; 
+        }
 
         playlistNames.forEach(name => {
             const groupDiv = document.createElement("div");
