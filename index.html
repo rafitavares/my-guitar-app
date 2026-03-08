@@ -69,12 +69,9 @@
         .speed-label { font-size: 16px; font-weight: bold; width: 50px; text-align: center; font-family: sans-serif;}
         .play-btn { color: #FF9500; font-size: 28px; margin-left: 10px; }
 
-        /* NOVA JANELA MODAL PARA PLAYLISTS */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; }
         .modal-content { background: var(--box-bg); padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
         .playlist-btn { width: 100%; text-align: left; padding: 14px; margin-bottom: 10px; background: var(--chord-box-bg); border: none; border-radius: 8px; font-size: 16px; color: var(--text-color); cursor: pointer; font-weight: bold; }
-        .playlist-btn:hover { background: #d1d1d6; }
-        body.dark-mode .playlist-btn:hover { background: #2c2c2e; }
     </style>
 </head>
 <body>
@@ -83,19 +80,16 @@
     <div class="header">
         <h2>🎸 Chords</h2>
         <div class="header-buttons">
-            <button class="icon-btn" onclick="window.location.href='tuner.html'" style="font-size: 16px; font-weight: bold;">🎼 Tuner</button>
-            
+            <button class="icon-btn" onclick="window.location.href='tuner.html'" style="font-size: 16px; font-weight: bold;">🪕 Tuner</button>
             <button class="icon-btn" onclick="toggleAddSong()">➕</button>
             <button class="icon-btn" onclick="toggleSearch()">🔍</button>
         </div>
     </div>
 
     <div class="app-container">
-        
         <div id="searchSection">
             <input type="text" id="searchInput" placeholder="Type song or artist..." oninput="liveSearch()">
         </div>
-
         <div id="liveSearchResults"></div>
 
         <div id="addSongSection">
@@ -120,6 +114,14 @@
         <button class="btn-primary" id="btnPrevShow" style="background-color: #FF9500; flex: 1; display: none;" onclick="prevShowSong()">⏮️ Prev</button>
         <button class="btn-primary" id="btnNextShow" style="background-color: #FF9500; flex: 1; display: none;" onclick="nextShowSong()">Next ⏭️</button>
         <button class="btn-primary" id="btnAddPlaylist" style="background-color: #007AFF; flex: 1;" onclick="openPlaylistModal()">➕ Playlist</button>
+    </div>
+
+    <div class="toolbar" style="background: var(--box-bg); border: 2px solid var(--chord-color);">
+        <button class="toolbar-btn" onclick="changeBpm(-5)">➖</button>
+        <span id="bpmLabel" style="font-weight: bold; color: var(--chord-color); width: 80px; text-align: center;">120 BPM</span>
+        <button class="toolbar-btn" onclick="changeBpm(5)">➕</button>
+        <div style="width: 1px; height: 20px; background: var(--border-color);"></div>
+        <button class="toolbar-btn" id="metroBtn" onclick="toggleMetronome()" style="color: #FF9500;">⏱️ Play Metro</button>
     </div>
 
     <div class="toolbar">
@@ -150,11 +152,8 @@
     <div class="modal-content">
         <h3 style="margin-top: 0;">Save to Playlist</h3>
         <p style="color: gray; font-size: 14px; margin-bottom: 15px;">Choose an existing playlist or create a new one.</p>
-        
         <div id="existingPlaylistsList"></div>
-        
         <hr style="border: none; border-top: 1px solid var(--border-color); margin: 15px 0;">
-        
         <input type="text" id="newPlaylistName" placeholder="Create new playlist name...">
         <button class="btn-primary" style="background-color: #34C759;" onclick="createNewPlaylist()">Create & Save</button>
         <button class="btn-primary" style="background-color: transparent; color: #FF3B30; border: 1px solid #FF3B30; margin-top:10px;" onclick="closePlaylistModal()">Cancel</button>
@@ -177,9 +176,76 @@
     let currentShowList = [];
     let currentShowIndex = 0;
 
-    // NOVAS VARIÁVEIS GLOBAIS PARA ACESSO AOS DADOS DAS LISTAS
     let globalCategories = {};
     let globalCustomSongs = [];
+
+    // --- VARIÁVEIS DO METRÔNOMO ---
+    let audioCtx;
+    let metronomeIsPlaying = false;
+    let bpm = 120;
+    let nextNoteTime = 0.0;
+    let current16thNote = 0;
+    let lookahead = 25.0; 
+    let scheduleAheadTime = 0.1; 
+    let timerID;
+
+    function nextNote() {
+        const secondsPerBeat = 60.0 / bpm;
+        nextNoteTime += secondsPerBeat;
+        current16thNote++;
+        if (current16thNote === 4) current16thNote = 0;
+    }
+
+    function scheduleNote(beatNumber, time) {
+        const osc = audioCtx.createOscillator();
+        const envelope = audioCtx.createGain();
+        osc.connect(envelope);
+        envelope.connect(audioCtx.destination);
+        
+        // Tom mais agudo no primeiro tempo do compasso
+        osc.frequency.value = (beatNumber === 0) ? 880.0 : 440.0;
+        
+        envelope.gain.value = 1;
+        envelope.gain.exponentialRampToValueAtTime(1, time + 0.001);
+        envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+        
+        osc.start(time);
+        osc.stop(time + 0.03);
+    }
+
+    function scheduler() {
+        while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime ) {
+            scheduleNote(current16thNote, nextNoteTime);
+            nextNote();
+        }
+        timerID = setTimeout(scheduler, lookahead);
+    }
+
+    function toggleMetronome() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        metronomeIsPlaying = !metronomeIsPlaying;
+        
+        if (metronomeIsPlaying) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            current16thNote = 0;
+            nextNoteTime = audioCtx.currentTime + 0.05;
+            scheduler();
+            document.getElementById("metroBtn").innerText = "⏹️ Stop Metro";
+            document.getElementById("metroBtn").style.color = "#FF3B30";
+        } else {
+            clearTimeout(timerID);
+            document.getElementById("metroBtn").innerText = "⏱️ Play Metro";
+            document.getElementById("metroBtn").style.color = "#FF9500";
+        }
+    }
+    
+    function changeBpm(step) {
+        bpm += step;
+        if(bpm < 40) bpm = 40;
+        if(bpm > 250) bpm = 250;
+        document.getElementById("bpmLabel").innerText = bpm + " BPM";
+    }
+    // ---------------------------------
 
     async function loadSongs() {
         try {
@@ -253,7 +319,6 @@
         let lines = rawText.split('\n');
         let result = [];
         let i = 0;
-        
         while (i < lines.length) {
             let line = lines[i];
             let tokens = line.trim().split(/\s+/);
@@ -289,10 +354,7 @@
         const artist = document.getElementById("newArtist").value.trim();
         const rawChords = document.getElementById("newChords").value;
 
-        if (!title || !rawChords) {
-            alert("Please enter a title and paste the chords!");
-            return;
-        }
+        if (!title || !rawChords) { alert("Please enter a title and paste the chords!"); return; }
 
         const formattedChords = autoFormatChords(rawChords);
         const newSong = { title, artist, chords: formattedChords };
@@ -334,7 +396,6 @@
 
     function changeTranspose(step) {
         currentTranspose += step;
-        
         savedTranspositions[currentSong.title] = currentTranspose;
         localStorage.setItem('savedTranspositions', JSON.stringify(savedTranspositions));
 
@@ -348,10 +409,7 @@
         let htmlResult = '';
 
         lines.forEach(line => {
-            if (line.trim() === '') {
-                htmlResult += '<br>'; 
-                return;
-            }
+            if (line.trim() === '') { htmlResult += '<br>'; return; }
 
             let formattedLine = '';
             let parts = line.split('[');
@@ -371,7 +429,6 @@
 
     function openSongOnScreen(song) {
         currentSong = song;
-        
         currentTranspose = savedTranspositions[song.title] || 0; 
         
         let labelText = currentTranspose === 0 ? "Key: 0" : (currentTranspose > 0 ? "Key: +" + currentTranspose : "Key: " + currentTranspose);
@@ -385,12 +442,7 @@
             document.getElementById("btnAddPlaylist").style.display = "none";
             document.getElementById("btnPrevShow").style.display = currentShowIndex > 0 ? "block" : "none";
             document.getElementById("btnNextShow").style.display = "block";
-            
-            if (currentShowIndex === currentShowList.length - 1) {
-                document.getElementById("btnNextShow").innerText = "End Show ⏹️";
-            } else {
-                document.getElementById("btnNextShow").innerText = "Next ⏭️";
-            }
+            document.getElementById("btnNextShow").innerText = (currentShowIndex === currentShowList.length - 1) ? "End Show ⏹️" : "Next ⏭️";
         } else {
             document.getElementById("btnAddPlaylist").style.display = "block";
             document.getElementById("btnPrevShow").style.display = "none";
@@ -410,6 +462,9 @@
 
     function closeSong() {
         stopAutoscroll();
+        // Desliga o metrônomo ao voltar para o menu
+        if(metronomeIsPlaying) toggleMetronome();
+        
         currentSong = null;
         isShowMode = false; 
         document.getElementById("resultArea").style.display = "none";
@@ -418,7 +473,6 @@
         window.scrollTo(0, 0);
     }
 
-    // --- NOVA FUNÇÃO QUE CONTROLA O MODO SHOW PARA QUALQUER LISTA ---
     function startShow(type, name) {
         if (type === 'playlist') {
             let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
@@ -429,10 +483,7 @@
             currentShowList = globalCustomSongs;
         }
         
-        if (!currentShowList || currentShowList.length === 0) {
-            alert("This list is empty!");
-            return;
-        }
+        if (!currentShowList || currentShowList.length === 0) { alert("This list is empty!"); return; }
         
         isShowMode = true;
         currentShowIndex = 0;
@@ -456,12 +507,10 @@
         }
     }
 
-    // --- FUNÇÕES DA NOVA JANELA MODAL DE PLAYLIST ---
     function openPlaylistModal() {
         if (!currentSong) return;
-        
         const listDiv = document.getElementById("existingPlaylistsList");
-        listDiv.innerHTML = ""; // Limpa a lista
+        listDiv.innerHTML = ""; 
         
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         const playlistNames = Object.keys(allPlaylists);
@@ -477,30 +526,21 @@
                 listDiv.appendChild(btn);
             });
         }
-        
         document.getElementById("newPlaylistName").value = "";
         document.getElementById("playlistModal").style.display = "flex";
     }
 
-    function closePlaylistModal() {
-        document.getElementById("playlistModal").style.display = "none";
-    }
+    function closePlaylistModal() { document.getElementById("playlistModal").style.display = "none"; }
 
     function createNewPlaylist() {
         const newName = document.getElementById("newPlaylistName").value.trim();
-        if (!newName) {
-            alert("Please enter a name for the new playlist.");
-            return;
-        }
+        if (!newName) { alert("Please enter a name for the new playlist."); return; }
         addToSpecificPlaylist(newName);
     }
 
     function addToSpecificPlaylist(playlistName) {
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
-        
-        if (!allPlaylists[playlistName]) {
-            allPlaylists[playlistName] = [];
-        }
+        if (!allPlaylists[playlistName]) allPlaylists[playlistName] = [];
         
         if (!allPlaylists[playlistName].some(song => song.title === currentSong.title)) {
             allPlaylists[playlistName].push(currentSong);
@@ -508,11 +548,8 @@
             alert("Saved to " + playlistName + "!"); 
             closePlaylistModal();
             displayLibrary(); 
-        } else { 
-            alert("Already in this playlist!"); 
-        }
+        } else { alert("Already in this playlist!"); }
     }
-    // ------------------------------------------------
 
     function changeFontSize(step) {
         currentFontSize += step;
@@ -549,7 +586,6 @@
         const playlistsArea = document.getElementById("playlistsArea");
         playlistsArea.innerHTML = "";
         
-        // MOSTRA A ABA CUSTOM (Added by Me) COM BOTÃO START SHOW
         globalCustomSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
         if (globalCustomSongs.length > 0) {
             const groupDiv = document.createElement("div");
@@ -569,7 +605,6 @@
             playlistsArea.appendChild(groupDiv);
         }
 
-        // MOSTRA AS PLAYLISTS DO USUÁRIO COM BOTÃO START SHOW
         let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
         const playlistNames = Object.keys(allPlaylists);
         playlistNames.forEach(name => {
@@ -591,7 +626,6 @@
             playlistsArea.appendChild(groupDiv);
         });
 
-        // AGRUPA E MOSTRA AS CATEGORIAS COM BOTÃO START SHOW
         globalCategories = {};
         songDatabase.forEach(song => {
             if (song.category) {
