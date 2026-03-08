@@ -222,11 +222,28 @@
     }
 
     function toggleMetronome() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // Inicializa o motor de áudio
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // --- HACK PARA DESBLOQUEAR O ÁUDIO NO IPHONE (iOS Unlock) ---
+            const unlockOsc = audioCtx.createOscillator();
+            const unlockGain = audioCtx.createGain();
+            unlockGain.gain.value = 0; // Volume zero
+            unlockOsc.connect(unlockGain);
+            unlockGain.connect(audioCtx.destination);
+            unlockOsc.start(0);
+            unlockOsc.stop(audioCtx.currentTime + 0.001);
+            // -----------------------------------------------------------
+        }
+
         metronomeIsPlaying = !metronomeIsPlaying;
         
         if (metronomeIsPlaying) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            // Força o iPhone a acordar o áudio
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
             current16thNote = 0;
             nextNoteTime = audioCtx.currentTime + 0.05;
             scheduler();
