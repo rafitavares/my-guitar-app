@@ -44,6 +44,9 @@
         textarea { font-family: monospace; resize: vertical; }
         .btn-primary { width: 100%; background-color: #007AFF; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
         
+        /* Resultados da Pesquisa em Tempo Real */
+        #liveSearchResults { background: var(--box-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: none; margin-bottom: 20px; }
+
         .playlist-group { background: var(--box-bg); border-radius: 12px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .playlist-title { background: var(--chord-box-bg); padding: 10px 15px; margin: 0; font-size: 16px; font-weight: bold; color: var(--chord-color); }
         .song-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--bg-color); font-size: 15px; }
@@ -82,20 +85,20 @@
     <div class="app-container">
         
         <div id="searchSection">
-            <input type="text" id="searchInput" placeholder="Search song name...">
-            <button class="btn-primary" onclick="searchSong()">Search Song</button>
+            <input type="text" id="searchInput" placeholder="Type song or artist..." oninput="liveSearch()">
         </div>
+
+        <div id="liveSearchResults"></div>
 
         <div id="addSongSection">
             <h3 style="margin-top: 0;">Add New Song</h3>
             <input type="text" id="newTitle" placeholder="Song Title">
             <input type="text" id="newArtist" placeholder="Artist">
-            <textarea id="newChords" rows="8" placeholder="Paste chords and lyrics here... (e.g. from Cifra Club)"></textarea>
+            <textarea id="newChords" rows="8" placeholder="Paste chords and lyrics here..."></textarea>
             <button class="btn-primary" style="background-color: #34C759;" onclick="saveCustomSong()">💾 Save Song</button>
             <button class="btn-primary" style="background-color: #FF3B30; margin-top: 10px;" onclick="toggleAddSong()">Cancel</button>
         </div>
 
-        <h3 style="margin-top: 0;">My Library & Playlists</h3>
         <div id="playlistsArea"></div>
     </div>
 </div>
@@ -116,7 +119,7 @@
     </div>
 
     <div class="toolbar">
-        <button class="toolbar-btn" onclick="toggleDarkMode()">🌓 Dark Mode</button>
+        <button class="toolbar-btn" onclick="toggleDarkMode()">🌓 Dark</button>
         <div style="width: 1px; height: 20px; background: var(--border-color);"></div>
         <button class="toolbar-btn" onclick="changeFontSize(-2)">A-</button>
         <span style="font-weight: bold; color: gray;">Text</span>
@@ -144,50 +147,84 @@
     let currentTranspose = 0;
     const musicalNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-    // CARREGA AS MÚSICAS DO JSON E AS MÚSICAS CRIADAS PELO USUÁRIO
+    // CARREGA E MOSTRA AS MÚSICAS AUTOMATICAMENTE
     async function loadSongs() {
         try {
             const response = await fetch('songs.json');
             const jsonSongs = await response.json();
-            
             const customSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
-            songDatabase = [...jsonSongs, ...customSongs]; // Junta as duas listas
+            songDatabase = [...jsonSongs, ...customSongs]; 
         } catch (error) {
             console.error("Error loading songs:", error);
             songDatabase = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
         }
+        // Depois de carregar, organiza a tela inicial!
+        displayLibrary();
     }
 
     window.onload = () => {
         loadSongs();
-        displayPlaylists();
     };
 
     function toggleSearch() {
         document.getElementById("addSongSection").style.display = "none";
         const searchDiv = document.getElementById("searchSection");
         searchDiv.style.display = searchDiv.style.display === "none" ? "block" : "none";
+        if(searchDiv.style.display === "block") document.getElementById("searchInput").focus();
     }
 
     function toggleAddSong() {
         document.getElementById("searchSection").style.display = "none";
+        document.getElementById("liveSearchResults").style.display = "none";
+        document.getElementById("playlistsArea").style.display = "block";
         const addDiv = document.getElementById("addSongSection");
         addDiv.style.display = addDiv.style.display === "none" ? "block" : "none";
     }
 
-    function searchSong() {
-        const query = document.getElementById("searchInput").value.toLowerCase();
-        const result = songDatabase.find(song => song.title.toLowerCase().includes(query) || song.artist.toLowerCase().includes(query));
-        if (result) {
-            openSongOnScreen(result);
-            document.getElementById("searchSection").style.display = "none";
-            document.getElementById("searchInput").value = ""; 
-        } else {
-            alert("Song not found in your library.");
-        }
+    // --- NOVA PESQUISA INTELIGENTE E EM TEMPO REAL ---
+    function normalizeString(str) {
+        // Remove acentos e deixa tudo em minúsculo
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     }
 
-    // --- O ROBÔ CONVERSOR (CIFRA CLUB PARA O SEU APP) ---
+    function liveSearch() {
+        const query = normalizeString(document.getElementById("searchInput").value);
+        const resultsDiv = document.getElementById("liveSearchResults");
+        const libraryDiv = document.getElementById("playlistsArea");
+
+        // Se apagar o texto, esconde a pesquisa e volta a mostrar a biblioteca
+        if (query.length === 0) {
+            resultsDiv.style.display = "none";
+            libraryDiv.style.display = "block";
+            return;
+        }
+
+        // Procura ignorando acentos
+        const results = songDatabase.filter(song => 
+            normalizeString(song.title).includes(query) || 
+            normalizeString(song.artist).includes(query)
+        );
+
+        resultsDiv.innerHTML = "";
+        if (results.length > 0) {
+            results.forEach(song => {
+                const songDiv = document.createElement("div");
+                songDiv.className = "song-item";
+                // Transforma aspas simples para não quebrar o código HTML
+                const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
+                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${safeSong})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div>`;
+                resultsDiv.appendChild(songDiv);
+            });
+            resultsDiv.style.display = "block";
+            libraryDiv.style.display = "none"; // Esconde a biblioteca para mostrar só a busca
+        } else {
+            resultsDiv.innerHTML = "<p style='padding: 15px; text-align: center; color: gray;'>No songs found.</p>";
+            resultsDiv.style.display = "block";
+            libraryDiv.style.display = "none";
+        }
+    }
+    // --------------------------------------------------
+
     function autoFormatChords(rawText) {
         let lines = rawText.split('\n');
         let result = [];
@@ -195,17 +232,12 @@
         
         while (i < lines.length) {
             let line = lines[i];
-            
-            // Verifica se a linha é composta majoritariamente por acordes
             let tokens = line.trim().split(/\s+/);
             let chordRegex = /^[A-G][#b]?(m|maj|dim|aug|sus|add)?\d*(\/[A-G][#b]?)?$/i;
             let chordCount = tokens.filter(t => chordRegex.test(t)).length;
-            
-            // Se mais de 50% das palavras na linha forem acordes, é uma "linha de acorde"
             let isChordLine = tokens.length > 0 && (chordCount / tokens.length) >= 0.5;
 
             if (isChordLine && i + 1 < lines.length && lines[i+1].trim() !== '') {
-                // Junta o acorde com a letra na linha de baixo
                 let lyricLine = lines[i+1];
                 let chordMatches = [...line.matchAll(/\S+/g)];
                 let paddedLyric = lyricLine.padEnd(line.length, ' ');
@@ -219,7 +251,7 @@
                     offset += chord.length + 2;
                 }
                 result.push(mergedLyric.trim());
-                i += 2; // Pula a linha da letra já que juntamos as duas
+                i += 2; 
             } else {
                 result.push(line);
                 i++;
@@ -228,7 +260,6 @@
         return result.join('\n');
     }
 
-    // SALVAR NOVA MÚSICA
     function saveCustomSong() {
         const title = document.getElementById("newTitle").value.trim();
         const artist = document.getElementById("newArtist").value.trim();
@@ -239,31 +270,24 @@
             return;
         }
 
-        // Passa o texto pelo robô conversor
         const formattedChords = autoFormatChords(rawChords);
-
         const newSong = { title, artist, chords: formattedChords };
 
-        // Salva na memória do celular
         let customSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
         customSongs.push(newSong);
         localStorage.setItem("myCustomSongs", JSON.stringify(customSongs));
 
-        // Adiciona na memória do aplicativo na mesma hora
         songDatabase.push(newSong);
-
         alert("Song saved successfully!");
         
-        // Limpa a tela
         document.getElementById("newTitle").value = "";
         document.getElementById("newArtist").value = "";
         document.getElementById("newChords").value = "";
         toggleAddSong();
         
-        // Abre a música para você ver como ficou
+        displayLibrary(); // Atualiza a tela inicial
         openSongOnScreen(newSong);
     }
-    // ----------------------------------------------------
 
     function transposeChordName(chord, steps) {
         if (steps === 0) return chord;
@@ -288,10 +312,7 @@
         currentTranspose += step;
         let labelText = currentTranspose === 0 ? "Key: 0" : (currentTranspose > 0 ? "Key: +" + currentTranspose : "Key: " + currentTranspose);
         document.getElementById("transposeLabel").innerText = labelText;
-        
-        if(currentSong) {
-            document.getElementById("songChords").innerHTML = formatChordsAndLyrics(currentSong.chords);
-        }
+        if(currentSong) document.getElementById("songChords").innerHTML = formatChordsAndLyrics(currentSong.chords);
     }
 
     function formatChordsAndLyrics(text) {
@@ -337,6 +358,12 @@
         document.getElementById("mainInterface").style.display = "none";
         document.getElementById("resultArea").style.display = "block";
         document.getElementById("scrollControls").style.display = "flex";
+        
+        // Limpa a busca ao abrir a música
+        document.getElementById("searchInput").value = "";
+        document.getElementById("liveSearchResults").style.display = "none";
+        document.getElementById("playlistsArea").style.display = "block";
+
         window.scrollTo(0, 0); 
     }
 
@@ -381,7 +408,8 @@
         if (!allPlaylists[playlistName].some(song => song.title === currentSong.title)) {
             allPlaylists[playlistName].push(currentSong);
             localStorage.setItem("allPlaylists", JSON.stringify(allPlaylists));
-            alert("Saved!"); displayPlaylists(); 
+            alert("Saved!"); 
+            displayLibrary(); // Atualiza a tela
         } else { alert("Already in this playlist!"); }
     }
 
@@ -391,17 +419,43 @@
             allPlaylists[playlistName] = allPlaylists[playlistName].filter(song => song.title !== songTitle);
             if (allPlaylists[playlistName].length === 0) delete allPlaylists[playlistName];
             localStorage.setItem("allPlaylists", JSON.stringify(allPlaylists));
-            displayPlaylists(); 
+            displayLibrary(); 
         }
     }
 
-    function displayPlaylists() {
+    // --- NOVA FUNÇÃO QUE MOSTRA TODAS AS MÚSICAS ORGANIZADAS ---
+    function displayLibrary() {
         const playlistsArea = document.getElementById("playlistsArea");
         playlistsArea.innerHTML = "";
-        let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
-        const playlistNames = Object.keys(allPlaylists);
+        
+        // 1. Agrupar músicas do songs.json pelas categorias
+        const categories = {};
+        songDatabase.forEach(song => {
+            if (song.category) {
+                if (!categories[song.category]) categories[song.category] = [];
+                // Evita mostrar a mesma música duas vezes se por acaso estiver duplicada
+                if (!categories[song.category].some(s => s.title === song.title)) {
+                    categories[song.category].push(song);
+                }
+            }
+        });
 
-        // NOVO: Mostrar também as músicas adicionadas pelo usuário na tela inicial
+        // 2. Mostrar as Categorias Oficiais na tela
+        Object.keys(categories).forEach(cat => {
+            const groupDiv = document.createElement("div");
+            groupDiv.className = "playlist-group";
+            groupDiv.innerHTML = `<h4 class="playlist-title">📚 ${cat}</h4>`;
+            categories[cat].forEach(song => {
+                const songDiv = document.createElement("div");
+                songDiv.className = "song-item";
+                const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
+                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${safeSong})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div>`;
+                groupDiv.appendChild(songDiv);
+            });
+            playlistsArea.appendChild(groupDiv);
+        });
+
+        // 3. Mostrar Músicas Adicionadas pelo Usuário (se houver)
         let customSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
         if (customSongs.length > 0) {
             const groupDiv = document.createElement("div");
@@ -410,29 +464,33 @@
             customSongs.forEach(song => {
                 const songDiv = document.createElement("div");
                 songDiv.className = "song-item";
-                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${JSON.stringify(song)})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div>`;
+                const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
+                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${safeSong})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div>`;
                 groupDiv.appendChild(songDiv);
             });
             playlistsArea.appendChild(groupDiv);
         }
 
-        if (playlistNames.length === 0 && customSongs.length === 0) { 
-            playlistsArea.innerHTML = "<p style='color: gray; text-align: center;'>Your library is empty.</p>"; 
-            return; 
-        }
-
+        // 4. Mostrar as Playlists Personalizadas do Usuário (se houver)
+        let allPlaylists = JSON.parse(localStorage.getItem("allPlaylists")) || {};
+        const playlistNames = Object.keys(allPlaylists);
         playlistNames.forEach(name => {
             const groupDiv = document.createElement("div");
             groupDiv.className = "playlist-group";
-            groupDiv.innerHTML = `<h4 class="playlist-title">📁 ${name}</h4>`;
+            groupDiv.innerHTML = `<h4 class="playlist-title">📁 ${name} (Playlist)</h4>`;
             allPlaylists[name].forEach(song => {
                 const songDiv = document.createElement("div");
                 songDiv.className = "song-item";
-                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${JSON.stringify(song)})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div><button class="delete-btn" onclick="deleteSong('${name}', '${song.title}')">🗑️</button>`;
+                const safeSong = JSON.stringify(song).replace(/'/g, "&#39;");
+                songDiv.innerHTML = `<div class="song-info" onclick='openSongOnScreen(${safeSong})'><strong>${song.title}</strong><br><small style="color:gray;">${song.artist}</small></div><button class="delete-btn" onclick="deleteSong('${name}', '${song.title}')">🗑️</button>`;
                 groupDiv.appendChild(songDiv);
             });
             playlistsArea.appendChild(groupDiv);
         });
+
+        if (playlistsArea.innerHTML === "") {
+            playlistsArea.innerHTML = "<p style='color: gray; text-align: center;'>Your library is empty.</p>";
+        }
     }
 
 </script>
