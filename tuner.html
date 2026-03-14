@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuner</title>
+    <title>Pro Tuner</title>
     <style>
         :root {
             --bg-color: #f2f2f7;
@@ -11,12 +11,13 @@
             --text-color: #333333;
             --chord-color: #007AFF;
             --border-color: #cccccc;
+            --perfect-color: #32D74B;
         }
         body.dark-mode {
             --bg-color: #000000;
             --box-bg: #1c1c1e;
             --text-color: #ffffff;
-            --chord-color: #32D74B; 
+            --chord-color: #0A84FF; 
             --border-color: #444444;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-color); text-align: center; }
@@ -24,46 +25,52 @@
         .header { background: var(--box-bg); padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 5px rgba(0,0,0,0.1); }
         .back-btn { background: none; border: none; font-size: 16px; color: #FF3B30; font-weight: bold; cursor: pointer; }
         
-        .tuner-container { padding: 30px 20px; }
+        .tuner-container { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; }
         
-        .note-display { font-size: 100px; font-weight: bold; margin: 20px 0; color: var(--chord-color); }
-        .cents-display { font-size: 20px; color: gray; margin-bottom: 30px; }
-        
-        .meter-container { width: 100%; max-width: 300px; height: 20px; background: var(--border-color); border-radius: 10px; margin: 0 auto; position: relative; overflow: hidden; }
-        .meter-center { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: #32D74B; transform: translateX(-50%); z-index: 2; }
-        .meter-pointer { position: absolute; top: 0; bottom: 0; width: 10px; background: var(--text-color); border-radius: 5px; transform: translateX(-50%); left: 50%; transition: left 0.1s ease-out; z-index: 3; }
+        .instrument-toggle { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .inst-btn { padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--box-bg); color: var(--text-color); font-weight: bold; cursor: pointer; }
+        .inst-btn.active { background: var(--chord-color); color: white; border-color: var(--chord-color); }
 
-        .btn-start { background-color: #007AFF; color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 40px; width: 80%; max-width: 300px; }
+        .note-display { font-size: 110px; font-weight: bold; margin: 10px 0; color: var(--text-color); line-height: 1; }
+        .cents-display { font-size: 18px; color: gray; margin-bottom: 20px; height: 24px; }
+        
+        /* Gráfico Canvas */
+        .graph-container { width: 100%; max-width: 350px; height: 150px; background: var(--box-bg); border-radius: 12px; border: 1px solid var(--border-color); position: relative; overflow: hidden; margin-bottom: 30px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
+        canvas { width: 100%; height: 100%; display: block; }
+        .target-line { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(50, 215, 75, 0.5); z-index: 1; pointer-events: none; }
+        
+        .graph-labels { display: flex; justify-content: space-between; width: 100%; max-width: 350px; font-size: 12px; color: gray; margin-top: -25px; margin-bottom: 30px; padding: 0 5px; box-sizing: border-box; }
+
+        .btn-start { background-color: var(--chord-color); color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 350px; }
         .btn-start.active { background-color: #FF3B30; }
-
-        .instrument-toggle { margin-top: 30px; display: flex; justify-content: center; gap: 10px; }
-        .inst-btn { padding: 10px 20px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--box-bg); color: var(--text-color); font-weight: bold; cursor: pointer; }
-        .inst-btn.active { background: var(--text-color); color: var(--box-bg); }
-
-        .tuning-ref { margin-top: 20px; font-size: 14px; color: gray; }
     </style>
 </head>
-<body class="dark-mode"> <div class="header">
-        <button class="back-btn" onclick="window.location.href='index.html'">⬅️ Back to Chords</button>
-        <h2 style="margin: 0; font-size: 20px;">🪕 Tuner</h2>
-        <div style="width: 60px;"></div> </div>
+<body class="dark-mode">
+
+    <div class="header">
+        <button class="back-btn" onclick="window.location.href='index.html'">⬅️ Back</button>
+        <h2 style="margin: 0; font-size: 20px;">🪕 Pro Tuner</h2>
+        <div style="width: 60px;"></div>
+    </div>
 
     <div class="tuner-container">
         <div class="instrument-toggle">
-            <button id="btnGuitar" class="inst-btn active" onclick="setInstrument('Guitar')">Guitar</button>
-            <button id="btnUkulele" class="inst-btn" onclick="setInstrument('Ukulele')">Ukulele</button>
+            <button id="btn440" class="inst-btn active" onclick="setBaseFrequency(440)">440 Hz (Standard)</button>
+            <button id="btn432" class="inst-btn" onclick="setBaseFrequency(432)">432 Hz (Earth)</button>
         </div>
-
-        <p class="tuning-ref" id="tuningRef">Standard: E A D G B E</p>
 
         <div class="note-display" id="note">--</div>
+        <div class="cents-display" id="cents">Press Start to tune</div>
         
-        <div class="meter-container">
-            <div class="meter-center"></div>
-            <div class="meter-pointer" id="pointer"></div>
+        <div class="graph-container">
+            <div class="target-line"></div>
+            <canvas id="pitchGraph"></canvas>
         </div>
-        
-        <div class="cents-display" id="cents">Press Start</div>
+        <div class="graph-labels">
+            <span>Flat (-50¢)</span>
+            <span>Perfect</span>
+            <span>Sharp (+50¢)</span>
+        </div>
 
         <button id="startBtn" class="btn-start" onclick="toggleTuner()">Start Microphone</button>
     </div>
@@ -74,22 +81,38 @@
     let microphone;
     let isTuning = false;
     let animationId;
+    
+    // Variável global para a referência de afinação
+    let baseA4 = 440; 
 
     const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
-    function setInstrument(inst) {
-        document.getElementById('btnGuitar').classList.remove('active');
-        document.getElementById('btnUkulele').classList.remove('active');
-        document.getElementById('btn' + inst).classList.add('active');
+    // Configurações do Gráfico
+    const canvas = document.getElementById('pitchGraph');
+    const ctx = canvas.getContext('2d');
+    const historySize = 100; // Quantidade de pontos no tempo
+    let pitchHistory = new Array(historySize).fill(null);
+
+    // Ajusta resolução do canvas para não ficar borrado em telas retina
+    function resizeCanvas() {
+        canvas.width = canvas.clientWidth * window.devicePixelRatio;
+        canvas.height = canvas.clientHeight * window.devicePixelRatio;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function setBaseFrequency(freq) {
+        baseA4 = freq;
+        document.getElementById('btn440').classList.remove('active');
+        document.getElementById('btn432').classList.remove('active');
+        document.getElementById('btn' + freq).classList.add('active');
         
-        if(inst === 'Guitar') {
-            document.getElementById('tuningRef').innerText = "Standard: E A D G B E";
-        } else {
-            document.getElementById('tuningRef').innerText = "Standard: G C E A";
+        if (isTuning) {
+            document.getElementById('cents').innerText = "Reference changed to " + freq + " Hz";
         }
     }
 
-    // Algoritmo de Autocorrelação para encontrar a frequência exata
+    // Algoritmo de Autocorrelação (Acha a frequência do áudio)
     function autoCorrelate(buf, sampleRate) {
         let SIZE = buf.length;
         let rms = 0;
@@ -128,24 +151,59 @@
         return sampleRate / T0;
     }
 
+    // A mágica que adapta a escala usando a Frequência Base escolhida (440 ou 432)
     function noteFromPitch(frequency) {
-        let noteNum = 12 * (Math.log(frequency / 440) / Math.log(2));
+        let noteNum = 12 * (Math.log(frequency / baseA4) / Math.log(2));
         return Math.round(noteNum) + 69;
     }
 
     function frequencyFromNoteNumber(note) {
-        return 440 * Math.pow(2, (note - 69) / 12);
+        return baseA4 * Math.pow(2, (note - 69) / 12);
     }
 
     function centsOffFromPitch(frequency, note) {
         return Math.floor(1200 * Math.log(frequency / frequencyFromNoteNumber(note)) / Math.log(2));
     }
 
+    function drawGraph() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.lineWidth = 3 * window.devicePixelRatio;
+        ctx.beginPath();
+        let started = false;
+        
+        for (let i = 0; i < historySize; i++) {
+            let cents = pitchHistory[i];
+            if (cents !== null) {
+                // Trava o limite do gráfico entre -50 e +50 cents
+                let clampedCents = Math.max(-50, Math.min(50, cents));
+                
+                // Mapeia os cents para a altura do Canvas (0 no meio)
+                let y = (canvas.height / 2) - (clampedCents * (canvas.height / 100));
+                let x = (i / (historySize - 1)) * canvas.width;
+                
+                // Pinta de verde se estiver no alvo (+- 5 cents), senão pinta de branco
+                if (Math.abs(clampedCents) < 5) {
+                    ctx.strokeStyle = '#32D74B';
+                } else {
+                    ctx.strokeStyle = '#0A84FF';
+                }
+
+                if (!started) {
+                    ctx.moveTo(x, y);
+                    started = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+        }
+        ctx.stroke();
+    }
+
     async function toggleTuner() {
         const btn = document.getElementById('startBtn');
         
         if (isTuning) {
-            // Desligar
             isTuning = false;
             cancelAnimationFrame(animationId);
             if(audioContext) audioContext.close();
@@ -153,11 +211,11 @@
             btn.classList.remove('active');
             document.getElementById('note').innerText = "--";
             document.getElementById('cents').innerText = "Paused";
-            document.getElementById('pointer').style.left = "50%";
+            pitchHistory.fill(null);
+            drawGraph();
             return;
         }
 
-        // Ligar
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -171,7 +229,7 @@
             btn.classList.add('active');
             updatePitch();
         } catch (err) {
-            alert("Microphone access denied or not supported by this browser. Please allow microphone access in your settings.");
+            alert("Microphone access denied. Please check your iPhone settings.");
             console.error(err);
         }
     }
@@ -189,26 +247,30 @@
             let noteName = notes[note % 12];
             let cents = centsOffFromPitch(pitch, note);
 
+            // Atualiza o histórico para o gráfico andar
+            pitchHistory.push(cents);
+            pitchHistory.shift(); // Remove o mais antigo
+
             document.getElementById('note').innerText = noteName;
             
-            // Atualiza a agulha (-50 cents a +50 cents = 0% a 100% da barra)
-            let pointerPosition = (cents + 50) + "%";
-            document.getElementById('pointer').style.left = pointerPosition;
-
-            // Muda a cor se estiver afinado (+- 5 cents)
             if (Math.abs(cents) < 5) {
                 document.getElementById('note').style.color = "#32D74B"; // Verde
-                document.getElementById('cents').innerText = "In Tune! (" + Math.round(pitch) + " Hz)";
+                document.getElementById('cents').innerText = `Perfect! (${Math.round(pitch)} Hz)`;
             } else {
                 document.getElementById('note').style.color = "var(--text-color)";
                 if(cents < 0) {
-                    document.getElementById('cents').innerText = "Flat (Aperte a corda)";
+                    document.getElementById('cents').innerText = `Too Flat • Tighten string`;
                 } else {
-                    document.getElementById('cents').innerText = "Sharp (Afrouxe a corda)";
+                    document.getElementById('cents').innerText = `Too Sharp • Loosen string`;
                 }
             }
+        } else {
+            // Se tiver silêncio, adiciona espaço vazio no gráfico para ele não congelar
+            pitchHistory.push(null);
+            pitchHistory.shift();
         }
 
+        drawGraph();
         animationId = requestAnimationFrame(updatePitch);
     }
 </script>
