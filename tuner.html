@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Tuner</title>
+    <title>Pro Tuner & FFT</title>
     <style>
         :root {
             --bg-color: #f2f2f7;
@@ -27,21 +27,22 @@
         
         .tuner-container { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; }
         
-        .instrument-toggle { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-        .inst-btn { padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--box-bg); color: var(--text-color); font-weight: bold; cursor: pointer; }
+        .instrument-toggle { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .inst-btn { padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--box-bg); color: var(--text-color); font-weight: bold; cursor: pointer; font-size: 14px; }
         .inst-btn.active { background: var(--chord-color); color: white; border-color: var(--chord-color); }
+        .inst-btn.active-green { background: #32D74B; color: black; border-color: #32D74B; }
 
         .note-display { font-size: 110px; font-weight: bold; margin: 10px 0; color: var(--text-color); line-height: 1; }
-        .cents-display { font-size: 18px; color: gray; margin-bottom: 20px; height: 24px; }
+        .cents-display { font-size: 18px; color: gray; margin-bottom: 10px; height: 24px; }
         
         /* Gráfico Canvas */
-        .graph-container { width: 100%; max-width: 350px; height: 150px; background: var(--box-bg); border-radius: 12px; border: 1px solid var(--border-color); position: relative; overflow: hidden; margin-bottom: 30px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
+        .graph-container { width: 100%; max-width: 350px; height: 160px; background: var(--box-bg); border-radius: 12px; border: 1px solid var(--border-color); position: relative; overflow: hidden; margin-bottom: 5px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
         canvas { width: 100%; height: 100%; display: block; }
-        .target-line { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(50, 215, 75, 0.5); z-index: 1; pointer-events: none; }
+        .target-line { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(50, 215, 75, 0.7); z-index: 1; pointer-events: none; }
         
-        .graph-labels { display: flex; justify-content: space-between; width: 100%; max-width: 350px; font-size: 12px; color: gray; margin-top: -25px; margin-bottom: 30px; padding: 0 5px; box-sizing: border-box; }
+        .graph-labels { display: flex; justify-content: space-between; width: 100%; max-width: 350px; font-size: 12px; color: gray; margin-bottom: 20px; padding: 0 5px; box-sizing: border-box; transition: opacity 0.3s; }
 
-        .btn-start { background-color: var(--chord-color); color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 350px; }
+        .btn-start { background-color: var(--chord-color); color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 350px; margin-top: 10px; }
         .btn-start.active { background-color: #FF3B30; }
     </style>
 </head>
@@ -54,22 +55,27 @@
     </div>
 
     <div class="tuner-container">
+        
         <div class="instrument-toggle">
-            <button id="btn440" class="inst-btn active" onclick="setBaseFrequency(440)">440 Hz (Standard)</button>
-            <button id="btn432" class="inst-btn" onclick="setBaseFrequency(432)">432 Hz (Earth)</button>
+            <button id="btnPitch" class="inst-btn active-green" onclick="setViewMode('pitch')">Pitch Graph</button>
+            <button id="btnFFT" class="inst-btn" onclick="setViewMode('fft')">Harmonics (FFT)</button>
+        </div>
+        <div class="instrument-toggle" style="margin-bottom: 10px;">
+            <button id="btn440" class="inst-btn active" onclick="setBaseFrequency(440)">440 Hz</button>
+            <button id="btn432" class="inst-btn" onclick="setBaseFrequency(432)">432 Hz</button>
         </div>
 
         <div class="note-display" id="note">--</div>
         <div class="cents-display" id="cents">Press Start to tune</div>
         
         <div class="graph-container">
-            <div class="target-line"></div>
+            <div class="target-line" id="targetLine"></div>
             <canvas id="pitchGraph"></canvas>
         </div>
-        <div class="graph-labels">
-            <span>Flat (-50¢)</span>
-            <span>Perfect</span>
-            <span>Sharp (+50¢)</span>
+        <div class="graph-labels" id="graphLabels">
+            <span id="labelLeft">Flat (-50¢)</span>
+            <span id="labelCenter">Perfect</span>
+            <span id="labelRight">Sharp (+50¢)</span>
         </div>
 
         <button id="startBtn" class="btn-start" onclick="toggleTuner()">Start Microphone</button>
@@ -82,18 +88,22 @@
     let isTuning = false;
     let animationId;
     
-    // Variável global para a referência de afinação
+    // Variáveis de Estado
     let baseA4 = 440; 
+    let viewMode = 'pitch'; // 'pitch' ou 'fft'
 
     const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
     // Configurações do Gráfico
     const canvas = document.getElementById('pitchGraph');
     const ctx = canvas.getContext('2d');
-    const historySize = 100; // Quantidade de pontos no tempo
+    
+    // Arrays para armazenar os dados do áudio
+    const historySize = 100;
     let pitchHistory = new Array(historySize).fill(null);
+    let frequencyArray; // Será inicializado quando o mic ligar
 
-    // Ajusta resolução do canvas para não ficar borrado em telas retina
+    // Ajusta resolução do canvas para não ficar borrado em telas de iPhone (Retina)
     function resizeCanvas() {
         canvas.width = canvas.clientWidth * window.devicePixelRatio;
         canvas.height = canvas.clientHeight * window.devicePixelRatio;
@@ -108,11 +118,34 @@
         document.getElementById('btn' + freq).classList.add('active');
         
         if (isTuning) {
-            document.getElementById('cents').innerText = "Reference changed to " + freq + " Hz";
+            document.getElementById('cents').innerText = "Ref: " + freq + " Hz";
         }
     }
 
-    // Algoritmo de Autocorrelação (Acha a frequência do áudio)
+    function setViewMode(mode) {
+        viewMode = mode;
+        document.getElementById('btnPitch').classList.remove('active-green');
+        document.getElementById('btnFFT').classList.remove('active-green');
+        
+        if (mode === 'pitch') {
+            document.getElementById('btnPitch').classList.add('active-green');
+            document.getElementById('targetLine').style.display = 'block';
+            document.getElementById('labelLeft').innerText = "Flat (-50¢)";
+            document.getElementById('labelCenter').innerText = "Perfect";
+            document.getElementById('labelRight').innerText = "Sharp (+50¢)";
+        } else {
+            document.getElementById('btnFFT').classList.add('active-green');
+            document.getElementById('targetLine').style.display = 'none'; // Esconde a linha central no modo FFT
+            document.getElementById('labelLeft').innerText = "0 Hz";
+            document.getElementById('labelCenter').innerText = "Frequency Spectrum";
+            document.getElementById('labelRight').innerText = "3000 Hz";
+        }
+        
+        // Limpa o canvas ao trocar
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Algoritmo Matemático de Captação da Nota
     function autoCorrelate(buf, sampleRate) {
         let SIZE = buf.length;
         let rms = 0;
@@ -151,7 +184,6 @@
         return sampleRate / T0;
     }
 
-    // A mágica que adapta a escala usando a Frequência Base escolhida (440 ou 432)
     function noteFromPitch(frequency) {
         let noteNum = 12 * (Math.log(frequency / baseA4) / Math.log(2));
         return Math.round(noteNum) + 69;
@@ -168,36 +200,58 @@
     function drawGraph() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        ctx.lineWidth = 3 * window.devicePixelRatio;
-        ctx.beginPath();
-        let started = false;
-        
-        for (let i = 0; i < historySize; i++) {
-            let cents = pitchHistory[i];
-            if (cents !== null) {
-                // Trava o limite do gráfico entre -50 e +50 cents
-                let clampedCents = Math.max(-50, Math.min(50, cents));
-                
-                // Mapeia os cents para a altura do Canvas (0 no meio)
-                let y = (canvas.height / 2) - (clampedCents * (canvas.height / 100));
-                let x = (i / (historySize - 1)) * canvas.width;
-                
-                // Pinta de verde se estiver no alvo (+- 5 cents), senão pinta de branco
-                if (Math.abs(clampedCents) < 5) {
-                    ctx.strokeStyle = '#32D74B';
-                } else {
-                    ctx.strokeStyle = '#0A84FF';
-                }
+        if (viewMode === 'pitch') {
+            // --- DESENHA O GRÁFICO DE AFINAÇÃO ---
+            ctx.lineWidth = 4 * window.devicePixelRatio;
+            ctx.beginPath();
+            let started = false;
+            
+            for (let i = 0; i < historySize; i++) {
+                let cents = pitchHistory[i];
+                if (cents !== null) {
+                    let clampedCents = Math.max(-50, Math.min(50, cents));
+                    let y = (canvas.height / 2) - (clampedCents * (canvas.height / 100));
+                    let x = (i / (historySize - 1)) * canvas.width;
+                    
+                    if (Math.abs(clampedCents) < 5) {
+                        ctx.strokeStyle = '#32D74B'; // Verde Perfeito
+                    } else if (clampedCents < 0) {
+                        ctx.strokeStyle = '#0A84FF'; // Azul (Flat)
+                    } else {
+                        ctx.strokeStyle = '#FF9500'; // Laranja (Sharp)
+                    }
 
-                if (!started) {
-                    ctx.moveTo(x, y);
-                    started = true;
-                } else {
-                    ctx.lineTo(x, y);
+                    if (!started) {
+                        ctx.moveTo(x, y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
                 }
             }
+            ctx.stroke();
+
+        } else if (viewMode === 'fft' && analyser) {
+            // --- DESENHA O GRÁFICO FFT (HARMÔNICOS) ---
+            analyser.getByteFrequencyData(frequencyArray);
+            
+            // Vamos desenhar apenas as primeiras ~300 bandas (até ~3000Hz)
+            // Para instrumentos como violão e voz, os harmônicos bonitos ficam nessa área.
+            const maxBins = 300; 
+            const barWidth = canvas.width / maxBins;
+            
+            for(let i = 0; i < maxBins; i++) {
+                let barHeight = (frequencyArray[i] / 255) * canvas.height;
+                let x = i * barWidth;
+                let y = canvas.height - barHeight;
+                
+                // Cria um gradiente de cor estilo estúdio (Azul -> Roxo -> Rosa)
+                ctx.fillStyle = `hsl(${220 + (i / maxBins) * 100}, 100%, 60%)`;
+                
+                // Desenha a barra da frequência
+                ctx.fillRect(x, y, Math.max(1, barWidth - 0.5), barHeight);
+            }
         }
-        ctx.stroke();
     }
 
     async function toggleTuner() {
@@ -220,7 +274,11 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             analyser = audioContext.createAnalyser();
-            analyser.fftSize = 2048;
+            
+            // DOBRAMOS A RESOLUÇÃO PARA O FFT (Maior precisão nos harmônicos)
+            analyser.fftSize = 4096; 
+            frequencyArray = new Uint8Array(analyser.frequencyBinCount);
+            
             microphone = audioContext.createMediaStreamSource(stream);
             microphone.connect(analyser);
             
@@ -229,7 +287,7 @@
             btn.classList.add('active');
             updatePitch();
         } catch (err) {
-            alert("Microphone access denied. Please check your iPhone settings.");
+            alert("Microphone access denied. Please allow it in settings.");
             console.error(err);
         }
     }
@@ -247,14 +305,13 @@
             let noteName = notes[note % 12];
             let cents = centsOffFromPitch(pitch, note);
 
-            // Atualiza o histórico para o gráfico andar
             pitchHistory.push(cents);
-            pitchHistory.shift(); // Remove o mais antigo
+            pitchHistory.shift(); 
 
             document.getElementById('note').innerText = noteName;
             
             if (Math.abs(cents) < 5) {
-                document.getElementById('note').style.color = "#32D74B"; // Verde
+                document.getElementById('note').style.color = "#32D74B"; 
                 document.getElementById('cents').innerText = `Perfect! (${Math.round(pitch)} Hz)`;
             } else {
                 document.getElementById('note').style.color = "var(--text-color)";
@@ -265,11 +322,11 @@
                 }
             }
         } else {
-            // Se tiver silêncio, adiciona espaço vazio no gráfico para ele não congelar
             pitchHistory.push(null);
             pitchHistory.shift();
         }
 
+        // Chama a função que vai desenhar a visualização escolhida
         drawGraph();
         animationId = requestAnimationFrame(updatePitch);
     }
