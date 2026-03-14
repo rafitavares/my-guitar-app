@@ -11,7 +11,6 @@
             --text-color: #333333;
             --chord-color: #007AFF;
             --border-color: #cccccc;
-            --perfect-color: #32D74B;
         }
         body.dark-mode {
             --bg-color: #000000;
@@ -32,15 +31,15 @@
         .inst-btn.active { background: var(--chord-color); color: white; border-color: var(--chord-color); }
         .inst-btn.active-green { background: #32D74B; color: black; border-color: #32D74B; }
 
-        .note-display { font-size: 110px; font-weight: bold; margin: 10px 0; color: var(--text-color); line-height: 1; }
-        .cents-display { font-size: 18px; color: gray; margin-bottom: 10px; height: 24px; }
+        .note-display { font-size: 110px; font-weight: bold; margin: 10px 0; color: var(--text-color); line-height: 1; transition: all 0.3s; }
+        .cents-display { font-size: 18px; color: gray; margin-bottom: 10px; height: 24px; transition: all 0.3s; }
         
-        /* Gráfico Canvas */
-        .graph-container { width: 100%; max-width: 350px; height: 160px; background: var(--box-bg); border-radius: 12px; border: 1px solid var(--border-color); position: relative; overflow: hidden; margin-bottom: 5px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
+        /* Gráfico Canvas Dinâmico */
+        .graph-container { width: 100%; max-width: 350px; height: 160px; background: var(--box-bg); border-radius: 12px; border: 1px solid var(--border-color); position: relative; overflow: hidden; margin-bottom: 5px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); transition: height 0.3s ease; }
         canvas { width: 100%; height: 100%; display: block; }
         .target-line { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(50, 215, 75, 0.7); z-index: 1; pointer-events: none; }
         
-        .graph-labels { display: flex; justify-content: space-between; width: 100%; max-width: 350px; font-size: 12px; color: gray; margin-bottom: 20px; padding: 0 5px; box-sizing: border-box; transition: opacity 0.3s; }
+        .graph-labels { display: flex; justify-content: space-between; width: 100%; max-width: 350px; font-size: 12px; color: gray; margin-bottom: 20px; padding: 0 5px; box-sizing: border-box; }
 
         .btn-start { background-color: var(--chord-color); color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; max-width: 350px; margin-top: 10px; }
         .btn-start.active { background-color: #FF3B30; }
@@ -68,7 +67,7 @@
         <div class="note-display" id="note">--</div>
         <div class="cents-display" id="cents">Press Start to tune</div>
         
-        <div class="graph-container">
+        <div class="graph-container" id="graphContainer">
             <div class="target-line" id="targetLine"></div>
             <canvas id="pitchGraph"></canvas>
         </div>
@@ -94,16 +93,14 @@
 
     const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
-    // Configurações do Gráfico
     const canvas = document.getElementById('pitchGraph');
     const ctx = canvas.getContext('2d');
     
-    // Arrays para armazenar os dados do áudio
     const historySize = 100;
     let pitchHistory = new Array(historySize).fill(null);
-    let frequencyArray; // Será inicializado quando o mic ligar
+    let frequencyArray; 
 
-    // Ajusta resolução do canvas para não ficar borrado em telas de iPhone (Retina)
+    // Ajusta a resolução nativa do iPhone (Retina)
     function resizeCanvas() {
         canvas.width = canvas.clientWidth * window.devicePixelRatio;
         canvas.height = canvas.clientHeight * window.devicePixelRatio;
@@ -116,12 +113,10 @@
         document.getElementById('btn440').classList.remove('active');
         document.getElementById('btn432').classList.remove('active');
         document.getElementById('btn' + freq).classList.add('active');
-        
-        if (isTuning) {
-            document.getElementById('cents').innerText = "Ref: " + freq + " Hz";
-        }
+        if (isTuning) { document.getElementById('cents').innerText = "Ref: " + freq + " Hz"; }
     }
 
+    // A MÁGICA DE ALTERNÂNCIA DE TELA
     function setViewMode(mode) {
         viewMode = mode;
         document.getElementById('btnPitch').classList.remove('active-green');
@@ -133,34 +128,38 @@
             document.getElementById('labelLeft').innerText = "Flat (-50¢)";
             document.getElementById('labelCenter').innerText = "Perfect";
             document.getElementById('labelRight').innerText = "Sharp (+50¢)";
+            
+            // Mostra a Nota e diminui o Gráfico
+            document.getElementById('note').style.display = 'block';
+            document.getElementById('cents').style.display = 'block';
+            document.getElementById('graphContainer').style.height = '160px';
         } else {
             document.getElementById('btnFFT').classList.add('active-green');
-            document.getElementById('targetLine').style.display = 'none'; // Esconde a linha central no modo FFT
+            document.getElementById('targetLine').style.display = 'none'; 
             document.getElementById('labelLeft').innerText = "0 Hz";
-            document.getElementById('labelCenter').innerText = "Frequency Spectrum";
-            document.getElementById('labelRight').innerText = "3000 Hz";
+            document.getElementById('labelCenter').innerText = "Harmonics Peaks";
+            document.getElementById('labelRight').innerText = "~3000 Hz";
+            
+            // ESCONDE a Nota e CRESCE o Gráfico para 320px
+            document.getElementById('note').style.display = 'none';
+            document.getElementById('cents').style.display = 'none';
+            document.getElementById('graphContainer').style.height = '320px'; 
         }
         
-        // Limpa o canvas ao trocar
+        setTimeout(resizeCanvas, 310); // Reajusta resolução após a animação CSS crescer o bloco
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Algoritmo Matemático de Captação da Nota
     function autoCorrelate(buf, sampleRate) {
         let SIZE = buf.length;
         let rms = 0;
-        for (let i = 0; i < SIZE; i++) {
-            let val = buf[i];
-            rms += val * val;
-        }
+        for (let i = 0; i < SIZE; i++) { rms += buf[i] * buf[i]; }
         rms = Math.sqrt(rms / SIZE);
-        if (rms < 0.01) return -1; // Som muito baixo
+        if (rms < 0.01) return -1;
 
         let r1 = 0, r2 = SIZE - 1, thres = 0.2;
-        for (let i = 0; i < SIZE / 2; i++)
-            if (Math.abs(buf[i]) < thres) { r1 = i; break; }
-        for (let i = 1; i < SIZE / 2; i++)
-            if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+        for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buf[i]) < thres) { r1 = i; break; }
+        for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; }
 
         buf = buf.slice(r1, r2);
         SIZE = buf.length;
@@ -188,21 +187,15 @@
         let noteNum = 12 * (Math.log(frequency / baseA4) / Math.log(2));
         return Math.round(noteNum) + 69;
     }
-
-    function frequencyFromNoteNumber(note) {
-        return baseA4 * Math.pow(2, (note - 69) / 12);
-    }
-
-    function centsOffFromPitch(frequency, note) {
-        return Math.floor(1200 * Math.log(frequency / frequencyFromNoteNumber(note)) / Math.log(2));
-    }
+    function frequencyFromNoteNumber(note) { return baseA4 * Math.pow(2, (note - 69) / 12); }
+    function centsOffFromPitch(frequency, note) { return Math.floor(1200 * Math.log(frequency / frequencyFromNoteNumber(note)) / Math.log(2)); }
 
     function drawGraph() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let pr = window.devicePixelRatio; // Proporção da tela do iPhone
         
         if (viewMode === 'pitch') {
-            // --- DESENHA O GRÁFICO DE AFINAÇÃO ---
-            ctx.lineWidth = 4 * window.devicePixelRatio;
+            ctx.lineWidth = 4 * pr;
             ctx.beginPath();
             let started = false;
             
@@ -214,43 +207,75 @@
                     let x = (i / (historySize - 1)) * canvas.width;
                     
                     if (Math.abs(clampedCents) < 5) {
-                        ctx.strokeStyle = '#32D74B'; // Verde Perfeito
+                        ctx.strokeStyle = '#32D74B'; 
                     } else if (clampedCents < 0) {
-                        ctx.strokeStyle = '#0A84FF'; // Azul (Flat)
+                        ctx.strokeStyle = '#0A84FF'; 
                     } else {
-                        ctx.strokeStyle = '#FF9500'; // Laranja (Sharp)
+                        ctx.strokeStyle = '#FF9500'; 
                     }
 
-                    if (!started) {
-                        ctx.moveTo(x, y);
-                        started = true;
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
+                    if (!started) { ctx.moveTo(x, y); started = true; } 
+                    else { ctx.lineTo(x, y); }
                 }
             }
             ctx.stroke();
 
         } else if (viewMode === 'fft' && analyser) {
-            // --- DESENHA O GRÁFICO FFT (HARMÔNICOS) ---
             analyser.getByteFrequencyData(frequencyArray);
             
-            // Vamos desenhar apenas as primeiras ~300 bandas (até ~3000Hz)
-            // Para instrumentos como violão e voz, os harmônicos bonitos ficam nessa área.
-            const maxBins = 300; 
+            const maxBins = 300; // Até ~3000Hz
             const barWidth = canvas.width / maxBins;
+            let peaks = [];
             
             for(let i = 0; i < maxBins; i++) {
-                let barHeight = (frequencyArray[i] / 255) * canvas.height;
+                let amp = frequencyArray[i];
+                let barHeight = (amp / 255) * canvas.height;
                 let x = i * barWidth;
                 let y = canvas.height - barHeight;
                 
-                // Cria um gradiente de cor estilo estúdio (Azul -> Roxo -> Rosa)
+                // Desenha a barra base
                 ctx.fillStyle = `hsl(${220 + (i / maxBins) * 100}, 100%, 60%)`;
-                
-                // Desenha a barra da frequência
                 ctx.fillRect(x, y, Math.max(1, barWidth - 0.5), barHeight);
+
+                // Algoritmo para achar Picos Principais (Filtro > 100 de força)
+                if (i > 0 && i < maxBins - 1) {
+                    if (amp > 100 && amp > frequencyArray[i-1] && amp > frequencyArray[i+1]) {
+                        peaks.push({ index: i, amp: amp, x: x + barWidth/2, y: y });
+                    }
+                }
             }
+
+            // Pega os 5 harmônicos mais fortes para não virar bagunça visual
+            peaks.sort((a, b) => b.amp - a.amp);
+            let topPeaks = peaks.slice(0, 5);
+
+            let hzPerBin = audioContext.sampleRate / analyser.fftSize;
+
+            topPeaks.forEach(p => {
+                let freq = p.index * hzPerBin;
+                let ampPercent = Math.round((p.amp / 255) * 100);
+                
+                let text = `${Math.round(freq)}Hz | ${ampPercent}%`;
+                
+                // Desenha o fundo escuro do texto
+                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                let boxW = 85 * pr;
+                let boxH = 20 * pr;
+                ctx.roundRect ? ctx.roundRect(p.x - boxW/2, p.y - 30*pr, boxW, boxH, 4*pr) : ctx.fillRect(p.x - boxW/2, p.y - 30*pr, boxW, boxH);
+                ctx.fill();
+                
+                // Desenha o Texto
+                ctx.fillStyle = '#32D74B'; 
+                ctx.font = `bold ${10 * pr}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText(text, p.x, p.y - 16*pr);
+                
+                // Desenha a bolinha no pico exato
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3 * pr, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+            });
         }
     }
 
@@ -274,9 +299,7 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             analyser = audioContext.createAnalyser();
-            
-            // DOBRAMOS A RESOLUÇÃO PARA O FFT (Maior precisão nos harmônicos)
-            analyser.fftSize = 4096; 
+            analyser.fftSize = 4096; // Alta precisão para separar os harmônicos
             frequencyArray = new Uint8Array(analyser.frequencyBinCount);
             
             microphone = audioContext.createMediaStreamSource(stream);
@@ -308,17 +331,18 @@
             pitchHistory.push(cents);
             pitchHistory.shift(); 
 
-            document.getElementById('note').innerText = noteName;
-            
-            if (Math.abs(cents) < 5) {
-                document.getElementById('note').style.color = "#32D74B"; 
-                document.getElementById('cents').innerText = `Perfect! (${Math.round(pitch)} Hz)`;
-            } else {
-                document.getElementById('note').style.color = "var(--text-color)";
-                if(cents < 0) {
-                    document.getElementById('cents').innerText = `Too Flat • Tighten string`;
+            if (viewMode === 'pitch') {
+                document.getElementById('note').innerText = noteName;
+                if (Math.abs(cents) < 5) {
+                    document.getElementById('note').style.color = "#32D74B"; 
+                    document.getElementById('cents').innerText = `Perfect! (${Math.round(pitch)} Hz)`;
                 } else {
-                    document.getElementById('cents').innerText = `Too Sharp • Loosen string`;
+                    document.getElementById('note').style.color = "var(--text-color)";
+                    if(cents < 0) {
+                        document.getElementById('cents').innerText = `Too Flat • Tighten string`;
+                    } else {
+                        document.getElementById('cents').innerText = `Too Sharp • Loosen string`;
+                    }
                 }
             }
         } else {
@@ -326,7 +350,6 @@
             pitchHistory.shift();
         }
 
-        // Chama a função que vai desenhar a visualização escolhida
         drawGraph();
         animationId = requestAnimationFrame(updatePitch);
     }
