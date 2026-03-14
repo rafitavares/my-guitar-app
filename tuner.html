@@ -87,9 +87,8 @@
     let isTuning = false;
     let animationId;
     
-    // Variáveis de Estado
     let baseA4 = 440; 
-    let viewMode = 'pitch'; // 'pitch' ou 'fft'
+    let viewMode = 'pitch'; 
 
     const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     
@@ -100,7 +99,6 @@
     let pitchHistory = new Array(historySize).fill(null);
     let frequencyArray; 
 
-    // Ajusta a resolução nativa do iPhone (Retina)
     function resizeCanvas() {
         canvas.width = canvas.clientWidth * window.devicePixelRatio;
         canvas.height = canvas.clientHeight * window.devicePixelRatio;
@@ -116,7 +114,6 @@
         if (isTuning) { document.getElementById('cents').innerText = "Ref: " + freq + " Hz"; }
     }
 
-    // A MÁGICA DE ALTERNÂNCIA DE TELA
     function setViewMode(mode) {
         viewMode = mode;
         document.getElementById('btnPitch').classList.remove('active-green');
@@ -129,7 +126,6 @@
             document.getElementById('labelCenter').innerText = "Perfect";
             document.getElementById('labelRight').innerText = "Sharp (+50¢)";
             
-            // Mostra a Nota e diminui o Gráfico
             document.getElementById('note').style.display = 'block';
             document.getElementById('cents').style.display = 'block';
             document.getElementById('graphContainer').style.height = '160px';
@@ -137,16 +133,15 @@
             document.getElementById('btnFFT').classList.add('active-green');
             document.getElementById('targetLine').style.display = 'none'; 
             document.getElementById('labelLeft').innerText = "0 Hz";
-            document.getElementById('labelCenter').innerText = "Harmonics Peaks";
+            document.getElementById('labelCenter').innerText = "Frequency Spectrum";
             document.getElementById('labelRight').innerText = "~3000 Hz";
             
-            // ESCONDE a Nota e CRESCE o Gráfico para 320px
             document.getElementById('note').style.display = 'none';
             document.getElementById('cents').style.display = 'none';
             document.getElementById('graphContainer').style.height = '320px'; 
         }
         
-        setTimeout(resizeCanvas, 310); // Reajusta resolução após a animação CSS crescer o bloco
+        setTimeout(resizeCanvas, 310); 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
@@ -183,16 +178,13 @@
         return sampleRate / T0;
     }
 
-    function noteFromPitch(frequency) {
-        let noteNum = 12 * (Math.log(frequency / baseA4) / Math.log(2));
-        return Math.round(noteNum) + 69;
-    }
+    function noteFromPitch(frequency) { return Math.round(12 * (Math.log(frequency / baseA4) / Math.log(2))) + 69; }
     function frequencyFromNoteNumber(note) { return baseA4 * Math.pow(2, (note - 69) / 12); }
     function centsOffFromPitch(frequency, note) { return Math.floor(1200 * Math.log(frequency / frequencyFromNoteNumber(note)) / Math.log(2)); }
 
     function drawGraph() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        let pr = window.devicePixelRatio; // Proporção da tela do iPhone
+        let pr = window.devicePixelRatio; 
         
         if (viewMode === 'pitch') {
             ctx.lineWidth = 4 * pr;
@@ -206,13 +198,9 @@
                     let y = (canvas.height / 2) - (clampedCents * (canvas.height / 100));
                     let x = (i / (historySize - 1)) * canvas.width;
                     
-                    if (Math.abs(clampedCents) < 5) {
-                        ctx.strokeStyle = '#32D74B'; 
-                    } else if (clampedCents < 0) {
-                        ctx.strokeStyle = '#0A84FF'; 
-                    } else {
-                        ctx.strokeStyle = '#FF9500'; 
-                    }
+                    if (Math.abs(clampedCents) < 5) ctx.strokeStyle = '#32D74B'; 
+                    else if (clampedCents < 0) ctx.strokeStyle = '#0A84FF'; 
+                    else ctx.strokeStyle = '#FF9500'; 
 
                     if (!started) { ctx.moveTo(x, y); started = true; } 
                     else { ctx.lineTo(x, y); }
@@ -223,54 +211,82 @@
         } else if (viewMode === 'fft' && analyser) {
             analyser.getByteFrequencyData(frequencyArray);
             
-            const maxBins = 300; // Até ~3000Hz
+            const maxBins = 300; 
             const barWidth = canvas.width / maxBins;
             let peaks = [];
             
+            // --- AUTO SCALE: Descobre o pico máximo atual na tela ---
+            let maxAmpInFrame = 1; 
+            for(let i = 0; i < maxBins; i++) {
+                if(frequencyArray[i] > maxAmpInFrame) maxAmpInFrame = frequencyArray[i];
+            }
+            
+            // Limita a altura máxima para 80% do canvas, abrindo espaço para os balões no topo!
+            let scaleFactor = (canvas.height * 0.80) / maxAmpInFrame;
+
+            // --- EIXO Y (AMPLITUDE) ---
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.font = `${10 * pr}px sans-serif`;
+            ctx.textAlign = 'left';
+            
+            // Linha e Texto: 100% de Amplitude
+            let y100 = canvas.height - (maxAmpInFrame * scaleFactor);
+            ctx.fillText("Max Amp", 5 * pr, y100 - 5 * pr);
+            ctx.beginPath(); ctx.moveTo(0, y100); ctx.lineTo(canvas.width, y100);
+            ctx.setLineDash([5 * pr, 5 * pr]); ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; ctx.stroke(); ctx.setLineDash([]);
+            
+            // Linha e Texto: 50% de Amplitude
+            let y50 = canvas.height - ((maxAmpInFrame / 2) * scaleFactor);
+            ctx.fillText("50% Amp", 5 * pr, y50 - 5 * pr);
+            ctx.beginPath(); ctx.moveTo(0, y50); ctx.lineTo(canvas.width, y50);
+            ctx.setLineDash([5 * pr, 5 * pr]); ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; ctx.stroke(); ctx.setLineDash([]);
+
+            // --- BARRAS DE FREQUÊNCIA ---
             for(let i = 0; i < maxBins; i++) {
                 let amp = frequencyArray[i];
-                let barHeight = (amp / 255) * canvas.height;
+                let barHeight = amp * scaleFactor;
                 let x = i * barWidth;
                 let y = canvas.height - barHeight;
                 
-                // Desenha a barra base
                 ctx.fillStyle = `hsl(${220 + (i / maxBins) * 100}, 100%, 60%)`;
                 ctx.fillRect(x, y, Math.max(1, barWidth - 0.5), barHeight);
 
-                // Algoritmo para achar Picos Principais (Filtro > 100 de força)
+                // Algoritmo para achar picos isolados
                 if (i > 0 && i < maxBins - 1) {
-                    if (amp > 100 && amp > frequencyArray[i-1] && amp > frequencyArray[i+1]) {
+                    if (amp > 50 && amp > frequencyArray[i-1] && amp > frequencyArray[i+1]) {
                         peaks.push({ index: i, amp: amp, x: x + barWidth/2, y: y });
                     }
                 }
             }
 
-            // Pega os 5 harmônicos mais fortes para não virar bagunça visual
+            // Pega os 5 harmônicos mais fortes
             peaks.sort((a, b) => b.amp - a.amp);
             let topPeaks = peaks.slice(0, 5);
-
             let hzPerBin = audioContext.sampleRate / analyser.fftSize;
 
+            // --- DESENHA AS ETIQUETAS NOS PICOS ---
             topPeaks.forEach(p => {
-                let freq = p.index * hzPerBin;
-                let ampPercent = Math.round((p.amp / 255) * 100);
+                let freq = Math.round(p.index * hzPerBin);
+                let text = `${freq}`; // Apenas o número!
                 
-                let text = `${Math.round(freq)}Hz | ${ampPercent}%`;
-                
-                // Desenha o fundo escuro do texto
-                ctx.fillStyle = 'rgba(0,0,0,0.8)';
-                let boxW = 85 * pr;
-                let boxH = 20 * pr;
-                ctx.roundRect ? ctx.roundRect(p.x - boxW/2, p.y - 30*pr, boxW, boxH, 4*pr) : ctx.fillRect(p.x - boxW/2, p.y - 30*pr, boxW, boxH);
+                // Posição flutuante segura (para não sair da tela)
+                let labelY = p.y - 20 * pr;
+                if (labelY < 15 * pr) labelY = 15 * pr; 
+
+                // Fundo do Texto
+                ctx.fillStyle = 'rgba(0,0,0,0.85)';
+                let boxW = 35 * pr;
+                let boxH = 18 * pr;
+                ctx.roundRect ? ctx.roundRect(p.x - boxW/2, labelY - 14*pr, boxW, boxH, 4*pr) : ctx.fillRect(p.x - boxW/2, labelY - 14*pr, boxW, boxH);
                 ctx.fill();
                 
-                // Desenha o Texto
+                // O Número
                 ctx.fillStyle = '#32D74B'; 
-                ctx.font = `bold ${10 * pr}px sans-serif`;
+                ctx.font = `bold ${11 * pr}px sans-serif`;
                 ctx.textAlign = 'center';
-                ctx.fillText(text, p.x, p.y - 16*pr);
+                ctx.fillText(text, p.x, labelY - 1*pr);
                 
-                // Desenha a bolinha no pico exato
+                // Bolinha no pico
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, 3 * pr, 0, 2 * Math.PI);
                 ctx.fillStyle = '#ffffff';
@@ -299,7 +315,7 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             analyser = audioContext.createAnalyser();
-            analyser.fftSize = 4096; // Alta precisão para separar os harmônicos
+            analyser.fftSize = 4096; 
             frequencyArray = new Uint8Array(analyser.frequencyBinCount);
             
             microphone = audioContext.createMediaStreamSource(stream);
