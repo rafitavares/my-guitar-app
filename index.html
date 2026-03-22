@@ -88,17 +88,38 @@
 
     <div class="app-container">
         <div id="searchSection">
-            <input type="text" id="searchInput" placeholder="Type song or artist..." oninput="liveSearch()">
+            <input type="text" id="searchInput" placeholder="Search your library..." oninput="liveSearch()">
         </div>
         <div id="liveSearchResults"></div>
 
         <div id="addSongSection">
-            <h3 style="margin-top: 0;">Add New Song</h3>
+            <h3 style="margin-top: 0;">Add / Import Song</h3>
+            
+            <div style="background: var(--chord-box-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+                <p style="margin: 0 0 5px 0; font-size: 15px; font-weight: bold; color: var(--text-color);">🌐 Web Search</p>
+                <p style="margin: 0 0 10px 0; font-size: 12px; color: gray;">Search the global database for chords.</p>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="webSearchInput" placeholder="Ex: Shape of You..." style="margin-bottom: 0;">
+                    <button class="btn-primary" style="width: auto; padding: 0 20px;" onclick="searchWebForChords()">🔍</button>
+                </div>
+                
+                <div id="webSearchResults" style="max-height: 250px; overflow-y: auto; font-size: 14px;"></div>
+                
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 15px 0;">
+                
+                <p style="margin: 0 0 5px 0; font-size: 12px; color: gray;">Or paste a direct URL (Cifra Club / UG):</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="importUrl" placeholder="https://..." style="margin-bottom: 0;">
+                    <button id="importBtn" class="btn-primary" style="width: auto; padding: 0 15px; background-color: var(--chord-color);" onclick="importSongFromUrl()">📥</button>
+                </div>
+            </div>
+
             <input type="text" id="newTitle" placeholder="Song Title">
             <input type="text" id="newArtist" placeholder="Artist">
-            <textarea id="newChords" rows="8" placeholder="Paste chords and lyrics here..."></textarea>
-            <button class="btn-primary" style="background-color: #34C759;" onclick="saveCustomSong()">💾 Save Song</button>
-            <button class="btn-primary" style="background-color: #FF3B30; margin-top: 10px;" onclick="toggleAddSong()">Cancel</button>
+            <textarea id="newChords" rows="8" placeholder="Chords and lyrics will appear here..."></textarea>
+            <button class="btn-primary" style="background-color: #34C759;" onclick="saveCustomSong()">💾 Save to Library</button>
+            <button class="btn-primary" style="background-color: transparent; color: #FF3B30; border: 1px solid #FF3B30; margin-top: 10px;" onclick="toggleAddSong()">Cancel</button>
         </div>
 
         <div id="playlistsArea"></div>
@@ -179,7 +200,16 @@
     let globalCategories = {};
     let globalCustomSongs = [];
 
-    // --- VARIÁVEIS DO METRÔNOMO ---
+    // --- WAKE LOCK (Impede a tela de apagar) ---
+    let wakeLock = null;
+    async function requestWakeLock() {
+        try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } 
+        catch (err) { console.error('Erro na tela:', err); }
+    }
+    function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); } }
+    document.addEventListener('visibilitychange', () => { if (currentSong && document.visibilityState === 'visible') requestWakeLock(); });
+
+    // --- METRÔNOMO ---
     let audioCtx;
     let metronomeIsPlaying = false;
     let bpm = 120;
@@ -201,49 +231,34 @@
         const envelope = audioCtx.createGain();
         osc.connect(envelope);
         envelope.connect(audioCtx.destination);
-        
-        // Tom mais agudo no primeiro tempo do compasso
         osc.frequency.value = (beatNumber === 0) ? 880.0 : 440.0;
-        
         envelope.gain.value = 1;
         envelope.gain.exponentialRampToValueAtTime(1, time + 0.001);
         envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
-        
         osc.start(time);
         osc.stop(time + 0.03);
     }
 
     function scheduler() {
-        while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime ) {
-            scheduleNote(current16thNote, nextNoteTime);
-            nextNote();
-        }
+        while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime ) { scheduleNote(current16thNote, nextNoteTime); nextNote(); }
         timerID = setTimeout(scheduler, lookahead);
     }
 
     function toggleMetronome() {
-        // Inicializa o motor de áudio
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // --- HACK PARA DESBLOQUEAR O ÁUDIO NO IPHONE (iOS Unlock) ---
             const unlockOsc = audioCtx.createOscillator();
             const unlockGain = audioCtx.createGain();
-            unlockGain.gain.value = 0; // Volume zero
+            unlockGain.gain.value = 0; 
             unlockOsc.connect(unlockGain);
             unlockGain.connect(audioCtx.destination);
             unlockOsc.start(0);
             unlockOsc.stop(audioCtx.currentTime + 0.001);
-            // -----------------------------------------------------------
         }
 
         metronomeIsPlaying = !metronomeIsPlaying;
-        
         if (metronomeIsPlaying) {
-            // Força o iPhone a acordar o áudio
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             current16thNote = 0;
             nextNoteTime = audioCtx.currentTime + 0.05;
             scheduler();
@@ -262,7 +277,140 @@
         if(bpm > 250) bpm = 250;
         document.getElementById("bpmLabel").innerText = bpm + " BPM";
     }
-    // ---------------------------------
+
+    // --- NOVA FUNÇÃO: PESQUISA INTELIGENTE DIRETO NA WEB ---
+    async function searchWebForChords() {
+        const query = document.getElementById("webSearchInput").value.trim();
+        if (!query) return;
+        
+        const resultsDiv = document.getElementById("webSearchResults");
+        resultsDiv.innerHTML = "<p style='text-align:center; padding:10px;'>⏳ Searching global database...</p>";
+        
+        try {
+            // Usa o Ultimate Guitar como motor primário pois possui o maior acervo estruturado
+            const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://www.ultimate-guitar.com/search.php?search_type=title&value=" + query);
+            const response = await fetch(proxyUrl);
+            const html = await response.text();
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            const jsStore = doc.querySelector('.js-store');
+
+            if (jsStore) {
+                const dataContent = jsStore.getAttribute('data-content');
+                const json = JSON.parse(dataContent);
+                const results = json?.store?.page?.data?.results || [];
+
+                let htmlOut = "";
+                let count = 0;
+
+                results.forEach(res => {
+                    // Filtra apenas tablaturas do tipo "Chords" (ignora Bass, Drums, Pro, etc)
+                    if (res.type === "Chords" && count < 10) {
+                        htmlOut += `
+                            <div style="background: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: var(--text-color);">${res.song_name}</strong><br>
+                                    <small style="color: gray;">${res.artist_name} • ⭐ ${res.rating.toFixed(1)} (${res.votes} votes)</small>
+                                </div>
+                                <button class="btn-primary" style="width: auto; padding: 6px 12px; font-size: 12px; background-color: #34C759;" onclick="importSongFromUrl('${res.tab_url}')">📥</button>
+                            </div>
+                        `;
+                        count++;
+                    }
+                });
+
+                if (count === 0) {
+                    resultsDiv.innerHTML = "<p style='text-align:center; color:gray;'>No chords found. Try another search.</p>";
+                } else {
+                    resultsDiv.innerHTML = htmlOut;
+                }
+            } else {
+                resultsDiv.innerHTML = "<p style='text-align:center; color:#FF3B30;'>Blocked by provider. Use the manual link paste below.</p>";
+            }
+        } catch (e) {
+            console.error(e);
+            resultsDiv.innerHTML = "<p style='text-align:center; color:#FF3B30;'>Connection error.</p>";
+        }
+    }
+
+    // --- FUNÇÃO DE IMPORTAÇÃO (Atualizada para receber links automáticos da busca) ---
+    async function importSongFromUrl(optionalUrl) {
+        const urlInput = optionalUrl || document.getElementById("importUrl").value.trim();
+        if (!urlInput) { alert("Paste a URL first!"); return; }
+
+        const isWebSearch = !!optionalUrl;
+        let originalText = "";
+        let btn = null;
+        
+        if (!isWebSearch) {
+            btn = document.getElementById("importBtn");
+            originalText = btn.innerText;
+            btn.innerText = "⏳...";
+            btn.style.opacity = "0.7";
+        } else {
+            document.getElementById("webSearchResults").innerHTML = "<p style='text-align:center; padding:10px;'>⏳ Extracting chords...</p>";
+        }
+
+        try {
+            const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(urlInput);
+            const response = await fetch(proxyUrl);
+            const html = await response.text();
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+
+            let title = "Unknown";
+            let artist = "Unknown";
+            let chords = "";
+
+            if (urlInput.includes("cifraclub.com")) {
+                title = doc.querySelector(".t1") ? doc.querySelector(".t1").innerText : "Unknown";
+                artist = doc.querySelector(".t3") ? doc.querySelector(".t3").innerText : "Unknown";
+                let pre = doc.querySelector("pre");
+                if (pre) chords = pre.innerText;
+            }
+            else if (urlInput.includes("ultimate-guitar.com")) {
+                const jsStore = doc.querySelector('.js-store');
+                if (jsStore) {
+                    const dataContent = jsStore.getAttribute('data-content');
+                    try {
+                        const json = JSON.parse(dataContent);
+                        chords = json?.store?.page?.data?.tab_view?.wiki_tab?.content || "";
+                        title = json?.store?.page?.data?.tab?.song_name || "Unknown";
+                        artist = json?.store?.page?.data?.tab?.artist_name || "Unknown";
+                        // Limpa os colchetes nativos do site
+                        chords = chords.replace(/\[\/?ch\]/g, '').replace(/\[\/?tab\]/g, '');
+                    } catch(e) { console.error(e); }
+                }
+            } 
+
+            if (chords) {
+                document.getElementById("newTitle").value = title.trim();
+                document.getElementById("newArtist").value = artist.trim();
+                document.getElementById("newChords").value = chords.trim();
+                document.getElementById("importUrl").value = "";
+                
+                if (isWebSearch) {
+                    document.getElementById("webSearchResults").innerHTML = "<p style='text-align:center; color:#34C759; padding:10px;'>✅ Extracted! Review below and click Save.</p>";
+                } else {
+                    alert("Success! Review the chords below and click 'Save to Library'.");
+                }
+            } else {
+                alert("Could not extract chords. It might be a protected PRO tab.");
+                if (isWebSearch) document.getElementById("webSearchResults").innerHTML = "";
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Connection error. Ensure the link is correct.");
+            if (isWebSearch) document.getElementById("webSearchResults").innerHTML = "";
+        }
+
+        if (!isWebSearch && btn) {
+            btn.innerText = originalText;
+            btn.style.opacity = "1";
+        }
+    }
 
     async function loadSongs() {
         try {
@@ -271,7 +419,6 @@
             const customSongs = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
             songDatabase = [...jsonSongs, ...customSongs]; 
         } catch (error) {
-            console.error("Error loading songs:", error);
             songDatabase = JSON.parse(localStorage.getItem("myCustomSongs")) || [];
         }
         displayLibrary();
@@ -292,10 +439,6 @@
         document.getElementById("playlistsArea").style.display = "block";
         const addDiv = document.getElementById("addSongSection");
         addDiv.style.display = addDiv.style.display === "none" ? "block" : "none";
-    }
-
-    function normalizeString(str) {
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     }
 
     function liveSearch() {
@@ -326,7 +469,7 @@
             resultsDiv.style.display = "block";
             libraryDiv.style.display = "none"; 
         } else {
-            resultsDiv.innerHTML = "<p style='padding: 15px; text-align: center; color: gray;'>No songs found.</p>";
+            resultsDiv.innerHTML = "<p style='padding: 15px; text-align: center; color: gray;'>No songs found in Library.</p>";
             resultsDiv.style.display = "block";
             libraryDiv.style.display = "none";
         }
@@ -386,8 +529,10 @@
         document.getElementById("newTitle").value = "";
         document.getElementById("newArtist").value = "";
         document.getElementById("newChords").value = "";
-        toggleAddSong();
+        document.getElementById("webSearchInput").value = "";
+        document.getElementById("webSearchResults").innerHTML = "";
         
+        toggleAddSong();
         displayLibrary(); 
         openSongOnScreen(newSong);
     }
@@ -404,7 +549,6 @@
 
             let index = musicalNotes.indexOf(note);
             if (index === -1) return match; 
-
             let newIndex = (index + steps) % 12;
             if (newIndex < 0) newIndex += 12;
             return musicalNotes[newIndex];
@@ -475,15 +619,13 @@
         document.getElementById("playlistsArea").style.display = "block";
 
         window.scrollTo(0, 0); 
-        
-        // MUDANÇA: LIGA A TRAVA DA TELA AQUI!
         requestWakeLock();
     }
 
     function closeSong() {
         stopAutoscroll();
-        // Desliga o metrônomo ao voltar para o menu
         if(metronomeIsPlaying) toggleMetronome();
+        releaseWakeLock();
         
         currentSong = null;
         isShowMode = false; 
@@ -679,32 +821,7 @@
             playlistsArea.innerHTML = "<p style='color: gray; text-align: center;'>Your library is empty.</p>";
         }
     }
-// --- CONTROLE DE TELA (NÃO DEIXAR APAGAR) ---
-    let wakeLock = null;
 
-    async function requestWakeLock() {
-        try {
-            if ('wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-            }
-        } catch (err) {
-            console.error('Erro na tela:', err);
-        }
-    }
-
-    function releaseWakeLock() {
-        if (wakeLock !== null) {
-            wakeLock.release().then(() => { wakeLock = null; });
-        }
-    }
-
-    // Se você minimizar o app e voltar, ele reativa a trava
-    document.addEventListener('visibilitychange', () => {
-        if (currentSong && document.visibilityState === 'visible') {
-            requestWakeLock();
-        }
-    });
-    // --------------------------------------------
 </script>
 
 </body>
