@@ -196,11 +196,10 @@
     let isShowMode = false;
     let currentShowList = [];
     let currentShowIndex = 0;
-
     let globalCategories = {};
     let globalCustomSongs = [];
 
-    // --- WAKE LOCK (Impede a tela de apagar) ---
+    // --- WAKE LOCK ---
     let wakeLock = null;
     async function requestWakeLock() {
         try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } 
@@ -255,7 +254,6 @@
             unlockOsc.start(0);
             unlockOsc.stop(audioCtx.currentTime + 0.001);
         }
-
         metronomeIsPlaying = !metronomeIsPlaying;
         if (metronomeIsPlaying) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -278,7 +276,31 @@
         document.getElementById("bpmLabel").innerText = bpm + " BPM";
     }
 
-    // --- NOVA FUNÇÃO: PESQUISA INTELIGENTE DIRETO NA WEB ---
+    // --- PROXIES ROTATIVOS (Sistema Anti-Bloqueio) ---
+    async function fetchWithProxy(targetUrl) {
+        const proxies = [
+            "https://api.codetabs.com/v1/proxy?quest=",
+            "https://api.allorigins.win/raw?url="
+        ];
+        
+        for (let proxy of proxies) {
+            try {
+                let res = await fetch(proxy + encodeURIComponent(targetUrl));
+                if (res.ok) {
+                    let text = await res.text();
+                    // Verifica se não é a página de proteção do Cloudflare/Captcha
+                    if (!text.toLowerCase().includes("cf-browser-verification") && !text.toLowerCase().includes("cloudflare")) {
+                        return text;
+                    }
+                }
+            } catch(e) {
+                console.log("Proxy falhou:", proxy);
+            }
+        }
+        throw new Error("Bloqueio de segurança detectado");
+    }
+
+    // --- NOVA PESQUISA DA WEB ---
     async function searchWebForChords() {
         const query = document.getElementById("webSearchInput").value.trim();
         if (!query) return;
@@ -287,10 +309,8 @@
         resultsDiv.innerHTML = "<p style='text-align:center; padding:10px;'>⏳ Searching global database...</p>";
         
         try {
-            // Usa o Ultimate Guitar como motor primário pois possui o maior acervo estruturado
-            const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://www.ultimate-guitar.com/search.php?search_type=title&value=" + query);
-            const response = await fetch(proxyUrl);
-            const html = await response.text();
+            const targetUrl = "https://www.ultimate-guitar.com/search.php?search_type=title&value=" + query;
+            const html = await fetchWithProxy(targetUrl);
 
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, "text/html");
@@ -305,7 +325,6 @@
                 let count = 0;
 
                 results.forEach(res => {
-                    // Filtra apenas tablaturas do tipo "Chords" (ignora Bass, Drums, Pro, etc)
                     if (res.type === "Chords" && count < 10) {
                         htmlOut += `
                             <div style="background: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
@@ -326,15 +345,23 @@
                     resultsDiv.innerHTML = htmlOut;
                 }
             } else {
-                resultsDiv.innerHTML = "<p style='text-align:center; color:#FF3B30;'>Blocked by provider. Use the manual link paste below.</p>";
+                throw new Error("Nenhum dado encontrado");
             }
         } catch (e) {
+            // O PLANO B: Se a segurança bloquear tudo, mostra a interface manual elegante!
             console.error(e);
-            resultsDiv.innerHTML = "<p style='text-align:center; color:#FF3B30;'>Connection error.</p>";
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 10px;">
+                    <p style="color:#FF3B30; font-weight:bold; margin-bottom: 5px;">🔒 Firewall Blocked the Search</p>
+                    <p style="color:gray; font-size:12px; margin-bottom: 15px;">The provider's anti-bot system is active. Find the song manually and paste the link below.</p>
+                    <button class="btn-primary" style="margin-bottom:10px; background:#FF9500;" onclick="window.open('https://www.cifraclub.com.br/busca/?q=${query}', '_blank')">🌐 Search on Cifra Club</button>
+                    <button class="btn-primary" style="background:#FF9500;" onclick="window.open('https://www.ultimate-guitar.com/search.php?search_type=title&value=${query}', '_blank')">🌐 Search on Ultimate Guitar</button>
+                </div>
+            `;
         }
     }
 
-    // --- FUNÇÃO DE IMPORTAÇÃO (Atualizada para receber links automáticos da busca) ---
+    // --- FUNÇÃO DE IMPORTAÇÃO (Usando Proxies Rotativos) ---
     async function importSongFromUrl(optionalUrl) {
         const urlInput = optionalUrl || document.getElementById("importUrl").value.trim();
         if (!urlInput) { alert("Paste a URL first!"); return; }
@@ -353,9 +380,7 @@
         }
 
         try {
-            const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(urlInput);
-            const response = await fetch(proxyUrl);
-            const html = await response.text();
+            const html = await fetchWithProxy(urlInput);
 
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, "text/html");
@@ -379,7 +404,6 @@
                         chords = json?.store?.page?.data?.tab_view?.wiki_tab?.content || "";
                         title = json?.store?.page?.data?.tab?.song_name || "Unknown";
                         artist = json?.store?.page?.data?.tab?.artist_name || "Unknown";
-                        // Limpa os colchetes nativos do site
                         chords = chords.replace(/\[\/?ch\]/g, '').replace(/\[\/?tab\]/g, '');
                     } catch(e) { console.error(e); }
                 }
@@ -397,12 +421,11 @@
                     alert("Success! Review the chords below and click 'Save to Library'.");
                 }
             } else {
-                alert("Could not extract chords. It might be a protected PRO tab.");
-                if (isWebSearch) document.getElementById("webSearchResults").innerHTML = "";
+                throw new Error("Cifras não encontradas");
             }
         } catch (e) {
             console.error(e);
-            alert("Connection error. Ensure the link is correct.");
+            alert("Blocked by the site's firewall (Cloudflare). Please open the site directly, copy the raw text of the chords, and paste it into the editor box below manually.");
             if (isWebSearch) document.getElementById("webSearchResults").innerHTML = "";
         }
 
